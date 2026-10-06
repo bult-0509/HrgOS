@@ -9,7 +9,8 @@ import { advanceClock, allowedScore, executeCommand, exportBackup, restoreBackup
 
 export async function createTestServer({ store, testKey, gameAdminKey, liveAccounts, enabled = false, origins = ['http://127.0.0.1:3000', 'http://localhost:3000'] }) {
   if (enabled && (!testKey || testKey.length < 32)) throw new Error('TEST_API_KEY 至少需要 32 个字符');
-  const app = Fastify({ logger: false, bodyLimit: 12 * 1024 * 1024 });
+  const trustedProxy = (process.env.HRG_TRUSTED_PROXY_CIDRS ?? '').split(',').map(value => value.trim()).filter(Boolean);
+  const app = Fastify({ logger: false, bodyLimit: 12 * 1024 * 1024, trustProxy: trustedProxy.length ? trustedProxy : false });
   await app.register(cors, { origin: origins, methods: ['GET', 'POST', 'DELETE'], allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key'] });
   await app.register(websocket);
   const connections = new Set();
@@ -43,7 +44,7 @@ export async function createTestServer({ store, testKey, gameAdminKey, liveAccou
   const attempts = new Map();
   app.post('/api/testing/runs/:runId/login', async request => {
     if (!enabled) throw Object.assign(new Error('测试接口未启用'), { statusCode: 404 });
-    const source = `${request.ip}:${request.params.runId}`;
+    const source = JSON.stringify([request.ip, request.params.runId, String(request.body?.username ?? '').slice(0, 200)]);
     const previous = attempts.get(source);
     if (previous?.blockedUntil > Date.now()) throw Object.assign(new Error('登录暂时受限'), { statusCode: 429 });
     if (attempts.size > 10000) attempts.clear();
