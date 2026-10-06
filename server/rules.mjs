@@ -273,7 +273,8 @@ export async function executeCommand(state, actor, command, key) {
     state.taskFailures ??= {};
     const record = { teamId: team.id, taskId: task.id, count: command.count, points: -task.failurePenalty * command.count, reason: command.reason };
     const previous = state.taskFailures[command.attemptId];
-    requireRule(!previous || JSON.stringify(previous) === JSON.stringify(record), 'IDEMPOTENCY_CONFLICT');
+    // PostgreSQL JSONB normalizes key order; compare the persisted business values.
+    requireRule(!previous || Object.keys(record).every(key => previous[key] === record[key]), 'IDEMPOTENCY_CONFLICT');
     if (!previous) { state.taskFailures[command.attemptId] = record; credit(state, team.id, record.points, 'TASK_PENALTY', `attempt:${command.attemptId}`, actor, command.reason); }
     result = { ...record, score: score(state, team.id) };
   } else if (command.type === 'finish_team') {

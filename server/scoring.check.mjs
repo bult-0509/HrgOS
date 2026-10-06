@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
+import { PGlite } from '@electric-sql/pglite';
 import { seedState, executeCommand, stateView, exportBackup, restoreBackup, RuleError } from './rules.mjs';
 import { officialScoring } from './scoring.mjs';
 import { normalizeBingoTasks } from './bingoBoards.mjs';
@@ -69,6 +70,25 @@ test('实际失败独立逐次扣分，业务ID和HTTP重试均防重，非工�
   await assert.rejects(invoke(state, player(1), { ...command, attemptId: randomUUID() }), /FORBIDDEN/);
   await review(state, await submit(state, 1, 'ARC04'));
   assert.equal(total(state, 1), officialScoring.tasks.find(x => x.id === 'ARC04').points - 150);
+});
+
+test('JSONB持久化后的失败业务ID重试不重复扣分，改动内容仍冲突', async () => {
+  const database = new PGlite();
+  try {
+    let state = await fixture();
+    const command = { type: 'task_failure', teamId: 'team-1', taskId: 'ARC04', count: 3, attemptId: randomUUID(), reason: '持久化三次失败' };
+    const httpKey = randomUUID();
+    await invoke(state, staff, command, httpKey);
+    const persisted = await database.query('SELECT $1::jsonb AS state', [JSON.stringify(state)]);
+    state = persisted.rows[0].state;
+    await invoke(state, staff, command, httpKey);
+    await invoke(state, staff, command);
+    assert.equal(total(state, 1), -150); assert.equal(state.ledger.length, 1);
+    for (const changed of [{ count: 4 }, { reason: '不同失败记录' }, { taskId: 'ARC11' }, { teamId: 'team-2' }]) {
+      await assert.rejects(invoke(state, staff, { ...command, ...changed }), /IDEMPOTENCY_CONFLICT/);
+    }
+    await assert.rejects(invoke(state, staff, { ...command, count: 4 }, httpKey), /IDEMPOTENCY_CONFLICT/);
+  } finally { await database.close(); }
 });
 
 test('证据打回不自动扣分，审核中显式新增失败才扣分', async () => {
