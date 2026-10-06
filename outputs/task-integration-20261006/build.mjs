@@ -215,7 +215,7 @@ if(process.argv.includes('--score-tasks') || process.argv.includes('--plan-only'
  for(const [col,width]of [['A',155],['B',140],['C',90],['D',55],['E',160],['F',375],['G',300]])photos.getRange(`${col}1:${col}63`).format.columnWidthPx=width;
  for(let i=0;i<57;i++){
   const file=path.join(outDir,'photo-thumbs',String(Math.floor(i/19)+1)+'-'+String(i%19+1).padStart(2,'0')+'.png');
-  const png=await fs.readFile(file);photos.images.add({dataUrl:'data:image/png;base64,'+png.toString('base64'),anchor:{from:{row:i+6,col:4},extent:{widthPx:150,heightPx:90}}});
+  const png=await fs.readFile(file).catch(async()=>{const{default:sharp}=await import('sharp');return sharp(path.join(root,'public/images/photo-clues',`region-${Math.floor(i/19)+1}`,`${String(i%19+1).padStart(2,'0')}-preview.webp`)).png().toBuffer();});photos.images.add({dataUrl:'data:image/png;base64,'+png.toString('base64'),anchor:{from:{row:i+6,col:4},extent:{widthPx:150,heightPx:90}}});
  }
  photos.tables.add('A6:G63',true,'PhotoIndex');photos.freezePanes.freezeRows(6);
  wb.recalculate();
