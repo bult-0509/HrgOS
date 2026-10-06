@@ -13,6 +13,9 @@ interface LiveTask {
   title?: string;
   brief?: string;
   points?: number;
+  difficulty?: '易' | '中' | '难' | '极难';
+  bonus?: { points: number; threshold: number };
+  failurePenalty?: number;
   awarded?: boolean;
   pendingCount?: number;
 }
@@ -78,7 +81,7 @@ export function LiveTaskBoard({ team, tasks, status, busy, blocked, assignment, 
 
   return <section className="live-task-board" aria-label="任务栏">
     <BingoDeck actorTeamId={team.id} approvedRegionId={team.regionId} paused={!!selected || sending}
-      boards={boards.map(board => ({ ...board, items: board.tasks.map(task => ({ id: task.id, slot: task.sharedSlot, points: task.points,
+      boards={boards.map(board => ({ ...board, items: board.tasks.map(task => ({ id: task.id, slot: task.sharedSlot, points: task.points, difficulty: task.difficulty,
         state: task.awarded ? 'awarded' : task.pendingCount ? 'pending' : team.regionId ? 'available' : 'locked', pendingCount: task.pendingCount })) }))}
       onSelect={id => { setTaskFile(null); setError(''); setSelectedId(id); }} />
     {assignment ? <p className="ability-alert">下一任务：{assignment.taskId}{assignment.kind === 'extra' ? '，请从对应能力卡提交证据。' : ''}</p> : null}
@@ -96,10 +99,14 @@ export function LiveTaskBoard({ team, tasks, status, busy, blocked, assignment, 
     {selected ? <Modal title={selected.title ?? selected.id} description={selected.points != null ? `${selected.points} 分` : undefined} onClose={closeTask}>
       {selectedPhoto ? <figure className="task-photo-detail"><img src={selectedPhoto.detail} alt={`图寻图片 #${selectedPhoto.number}，点击格子后显示清晰图`} /><figcaption>#{selectedPhoto.number}</figcaption></figure> : selectedSlot?.startsWith('P') ? <p>等待工作人员通过区域入口审核。</p> : <p>无需图寻</p>}
       <p>{selected.brief ?? '等待区域解锁。'}</p>
+      {selected.difficulty ? <p>任务难度：{selected.difficulty}</p> : null}
+      {selected.bonus ? <p>成绩至少 {selected.bonus.threshold}，核验后额外 +{selected.bonus.points} 分；基础分只由最早有效完成者领取。</p> : null}
+      {selected.failurePenalty ? <p>真实失败每次 −{selected.failurePenalty} 分，由工作人员记录；证据打回不会自动扣分。</p> : null}
+      {selected.id === 'PHI24' ? <button disabled={cannotSubmit} onClick={() => void submit({ type: 'task_nickname' }).then(() => setNotice('昵称已改为零零五；之后每项任务开始前请先溜一遍说的道理。')).catch(cause => setError(cause instanceof Error ? cause.message : String(cause)))}>将本人的昵称改为零零五</button> : null}
       {selected.pendingCount ? <p role="status">已有 {selected.pendingCount} 队提交审核。</p> : null}
       {error ? <p role="alert">{error}</p> : null}
       <form onSubmit={event => { event.preventDefault(); void send('task'); }}>
-        <label>现场完成图片（8 MB 内）<input type="file" accept="image/png,image/jpeg,image/webp" required onChange={event => setTaskFile(event.target.files?.[0] ?? null)} /></label>
+        <label>现场完成图片或视频（8 MB 内）<input type="file" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm" required onChange={event => setTaskFile(event.target.files?.[0] ?? null)} /></label>
         <button disabled={cannotSubmit || !team.regionId || !taskFile || blocked || assignment?.kind === 'extra'}>{sending ? '正在提交…' : '提交任务审核'}</button>
       </form>
     </Modal> : null}

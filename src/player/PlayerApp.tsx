@@ -144,6 +144,7 @@ export function PlayerApp({
               boards={bingoBoards.map(board => ({ ...board, items: board.tasks.map(task => ({
                 id: task.id,
                 slot: task.sharedSlot,
+                difficulty: task.scoreDifficulty,
                 points: task.configured === false || task.pointsConfigured === false ? undefined : task.points,
                 state: task.configured === false ? 'unconfigured' : task.state,
                 pendingCount: task.pendingCount
@@ -239,6 +240,9 @@ export function PlayerApp({
             {selectedTask.configured === false ? <StatusChip tone="neutral">待配置</StatusChip> : <><StatusChip tone={selectedTask.difficulty === "挑战" ? "danger" : selectedTask.difficulty === "标准" ? "warning" : "success"}>{selectedTask.difficulty}</StatusChip><strong>{selectedTask.pointsConfigured === false ? '分值待配置 · 本地演示' : `${selectedTask.points} 分`}</strong></>}
             {selectedTask.pendingCount ? <span>{selectedTask.pendingCount} 队审核中</span> : null}
           </div>
+          {selectedTask.scoreDifficulty === '极难' ? <span className="tb-difficulty" data-level="极难">极难</span> : null}
+          {selectedTask.bonus ? <p>核验成绩至少 {selectedTask.bonus.threshold}，额外 +{selectedTask.bonus.points} 分。</p> : null}
+          {selectedTask.failurePenalty ? <p>每次真实失败 −{selectedTask.failurePenalty} 分，工作人员单独记录。</p> : null}
           {!region && selectedTask.sharedSlot?.startsWith('P') ? <div className="locked-panel"><LockKeyhole size={24} aria-hidden="true" /><div><strong>等待入口审核</strong><p>工作人员通过后才开放本区域图片。</p></div></div> : selectedTask.configured === false ? <div className="locked-panel"><Camera size={24} aria-hidden="true" /><div><strong>任务待配置</strong><p>图片已接入，正式任务与分值尚未填写，暂不开放提交。</p></div></div> : selectedTask.state === "locked" ? (
             <div className="locked-panel"><LockKeyhole size={24} aria-hidden="true" /><div><strong>还没解锁</strong><p>先通过本区图寻题。</p></div></div>
           ) : (

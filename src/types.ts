@@ -27,6 +27,9 @@ export interface Task {
   title: string;
   brief: string;
   points: number;
+  scoreDifficulty?: '易' | '中' | '难' | '极难';
+  bonus?: { points: number; threshold: number };
+  failurePenalty?: number;
   difficulty: "轻松" | "标准" | "挑战";
   state: TaskState;
   imageTone: string;

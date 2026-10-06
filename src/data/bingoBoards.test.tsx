@@ -15,7 +15,8 @@ describe('五张共享 Bingo 与身份解耦', () => {
       expect(board.tasks).toHaveLength(25);
       expect(board.tasks.filter(task => task.sharedSlot?.startsWith('P'))).toHaveLength(19);
       expect(board.tasks.filter(task => task.sharedSlot?.startsWith('D'))).toHaveLength(6);
-      expect(board.tasks.every(task => task.title && task.brief && task.pointsConfigured === false)).toBe(true);
+      expect(board.tasks.every(task => task.title && task.brief && task.pointsConfigured && task.points > 0)).toBe(true);
+      expect(board.tasks.reduce((total, task) => total + task.points, 0)).toBe(4000);
     }
   });
   it('所有身份均可获得五套任务，登录身份不成为任务过滤条件', () => {
