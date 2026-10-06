@@ -42,8 +42,10 @@ function ranking(state) {
   let rank = 0;
   return entries.map((entry, index) => { const previous = entries[index - 1]; if (!previous || previous.score !== entry.score || previous.taskScore !== entry.taskScore || previous.finishedAt !== entry.finishedAt) rank = index + 1; return { ...entry, rank }; });
 }
-function message(state, teamId, type, text, pushEligible = false, reference = null) {
-  state.messages.push({ id: ++state.sequence, teamId, type, text, pushEligible, pushStatus: pushEligible ? 'unconfigured' : 'not-required', at: state.now, reference, readBy: [], playedBy: [] });
+function message(state, teamId, type, text, pushEligible = false, reference = null, extra = null) {
+  const item = { id: ++state.sequence, teamId, type, text, pushEligible, pushStatus: pushEligible ? 'unconfigured' : 'not-required', at: state.now, reference, readBy: [], playedBy: [], ...(extra ?? {}) };
+  state.messages.push(item);
+  return item;
 }
 function locationView(state, team) {
   const position = state.locations[team.id];
@@ -227,6 +229,17 @@ export async function executeCommand(state, actor, command, key) {
     if (command.result === 'reject') { requireRule(command.reason?.trim(), 'REASON_REQUIRED', 400); pending.status = 'REJECTED'; }
     else { requireRule(command.result === 'approve', 'REVIEW_INVALID', 400); card.uses--; pending.status = 'CONFIRMED'; applyEffect(state, card, pending.target, state.accounts.find(item => item.id === pending.actorId), 'CARD'); }
     result = { pending };
+  } else if (command.type === 'event_create') {
+    manage(actor); requireRunning(state);
+    const title = typeof command.title === 'string' ? command.title.trim() : '';
+    const description = typeof command.description === 'string' ? command.description.trim() : '';
+    requireRule(title.length > 0 && title.length <= 100 && description.length > 0 && description.length <= 2000, 'EVENT_INVALID', 400);
+    requireRule(Number.isSafeInteger(command.rewardPoints) && command.rewardPoints >= 0 && command.rewardPoints <= 10000, 'EVENT_INVALID', 400);
+    requireRule(state.teams.some(team => team.id === command.targetTeamId), 'TARGET_INVALID', 400);
+    // 现场创作没有预设模板，直接把内容固定成候选，复用既有 event_confirm 的发放与账本幂等。
+    const id = randomUUID();
+    const event = { id, teamId: command.targetTeamId, regionId: null, status: 'PENDING', draws: 0, title, description, rewardPoints: command.rewardPoints, candidate: { id, effect: 'score', amount: command.rewardPoints, title, description }, createdBy: actor.id, createdAt: state.now };
+    state.events.push(event); result = { event };
   } else if (command.type === 'event_draw' || command.type === 'event_confirm') {
     manage(actor); requireRunning(state);
     const event = state.events.find(item => item.id === command.eventId && item.status === 'PENDING'); requireRule(event, 'EVENT_INVALID');
@@ -236,9 +249,19 @@ export async function executeCommand(state, actor, command, key) {
       event.candidate = { ...templates[Math.floor(Math.random() * templates.length)], id: event.id }; event.draws++; result = { event };
     } else {
       requireRule(event.candidate, 'EVENT_NOT_DRAWN');
-      const targets = command.targetTeamId === 'all' ? state.teams.map(team => team.id) : [command.targetTeamId];
-      targets.forEach(target => applyEffect(state, event.candidate, target, actor, 'EVENT')); event.status = 'ISSUED'; result = { event };
+      const target = command.targetTeamId ?? event.teamId;
+      const targets = target === 'all' ? state.teams.map(team => team.id) : [target];
+      targets.forEach(item => applyEffect(state, event.candidate, item, actor, 'EVENT')); event.status = 'ISSUED'; result = { event };
     }
+  } else if (command.type === 'send_message') {
+    requireRule(actor.role === 'player', 'FORBIDDEN', 403); requireRunning(state);
+    const team = teamFor(state, actor); requireRule(team, 'TEAM_NOT_FOUND', 404); requireRule(!team.finishedAt, 'TEAM_FINISHED');
+    requireRule(command.recipient === 'staff', 'RECIPIENT_INVALID', 400);
+    const text = typeof command.text === 'string' ? command.text.trim() : '';
+    requireRule(text.length > 0 && text.length <= 2000, 'MESSAGE_INVALID', 400);
+    // 收件人固定为工作人员；发送方队伍写进 reference 与 fromTeamId，供工作人员界面显示来源。
+    const item = message(state, 'staff', 'player_text', text, true, team.id, { fromTeamId: team.id, fromAccountId: actor.id });
+    result = { message: { id: item.id, text: item.text, teamId: team.id, at: item.at } };
   } else if (command.type === 'location') {
     requireRule(actor.role === 'player' && actor.leader, 'LEADER_ONLY', 403); requireRunning(state);
     const team = teamFor(state, actor); requireRule(!team.finishedAt, 'TEAM_FINISHED'); requireRule(command.foreground === true, 'PAGE_NOT_FOREGROUND');
