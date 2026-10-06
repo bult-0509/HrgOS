@@ -35,7 +35,7 @@ export async function registerLiveRoutes(app, store, adminKey, accountRoster = l
   });
   const attempts = new Map();
   app.post('/api/games/:runId/login', async request => {
-    guard(); const source = `${request.ip}:${request.params.runId}`; const attempt = attempts.get(source);
+    guard(); const source = JSON.stringify([request.ip, request.params.runId, String(request.body?.username ?? '').slice(0, 200)]); const attempt = attempts.get(source);
     if (attempt?.blockedUntil > Date.now()) throw Object.assign(new Error('登录暂时受限'), { statusCode: 429 });
     if (attempts.size > 10000) attempts.clear();
     const state = await store.read(request.params.runId, true); const { username, password, role } = request.body ?? {};
