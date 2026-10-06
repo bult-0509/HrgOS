@@ -14,7 +14,7 @@ const fs=require('node:fs/promises'),path=require('node:path'),assert=require('n
   await page.setViewportSize(viewport);
   for(let i=0;i<ids.length;i++){
    await page.locator('.team-tab').nth(i).click();
-   await page.evaluate(async()=>{await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));});
+   await page.evaluate(async()=>{await Promise.all([...document.querySelectorAll('.edge-art,.team-mascot,.cell-preview,.team-tab img')].map(img=>img.decode().catch(()=>{})));});
    const state=await page.evaluate(()=>{
     const frame=document.querySelector('.edge-art'),cells=[...document.querySelectorAll('.cell')];
     const rect=el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height}};

@@ -29,12 +29,35 @@
   const page = document.getElementById('event-page'), scene = document.getElementById('board-scene'), board = document.getElementById('board');
   const dialog = document.getElementById('clue-dialog'), mascot = document.getElementById('team-mascot');
   const frame = document.getElementById('team-frame');
-  // 独立轮廓资源提前加载，切队时不重新生成装饰或触碰比赛数据。
+  // 独立轮廓资源提前加载，切换棋盘时不重新生成装饰或触碰比赛身份。
   teams.forEach(team => { const img=new Image(); img.src=`assets/frame-${team.id}.svg`; });
   // 本页只显示一个已审核区域的美术快照，不提供玩家换区入口。
   const region=2;
   let active=0, paused=false, lastFocus=null, pointerStart=null;
   let entranceTimer;
+  let deckCards=[];
+  function buildDeck(){
+    const stage=document.querySelector('.event-stage');stage.classList.add('preview-deck');
+    deckCards=teams.map((team,i)=>{
+      const holder=document.createElement('div');holder.className='preview-deck__card';holder.dataset.team=team.id;
+      const peek=document.createElement('div');peek.className='board-preview';peek.setAttribute('aria-hidden','true');
+      peek.style.setProperty('--preview-shade',team.shade);
+      peek.innerHTML=`<div class="board-shell"><img class="frame-preview" src="assets/frame-${team.id}.svg" alt="" width="1000" height="1000"><div class="board-preview__core"><div class="board-preview__head">${pad(i+1)} / 05</div><div class="board-preview__grid">${slots.map(slot=>`<span class="board-preview__cell">${slot[0]==='P'?`<img src="${imageUrl(Number(slot.slice(1)),'-preview.webp')}" alt="" width="480" height="480" loading="lazy">`:''}<b>${slot}</b></span>`).join('')}</div><div class="board-preview__foot">19 / 06</div></div></div><img class="mascot-preview" src="assets/${team.asset}.webp" alt="" width="700" height="700">`;
+      const target=document.createElement('button');target.className='preview-deck__peek-target';target.type='button';target.tabIndex=-1;target.setAttribute('aria-label',`切换到${team.name} Bingo`);target.addEventListener('click',()=>selectTeam(i));
+      holder.append(peek,target);stage.append(holder);return {holder,peek,target};
+    });
+    deckCards[0].holder.append(scene);
+  }
+  function positionDeck(){
+    deckCards.forEach(({holder,peek,target},i)=>{
+      let offset=(i-active+teams.length)%teams.length;if(offset>2)offset-=teams.length;
+      const previous=holder.dataset.offset;
+      holder.classList.remove('is-teleporting');
+      if(previous!==undefined&&Math.abs(Number(previous)-offset)>2){holder.classList.add('is-teleporting');requestAnimationFrame(()=>requestAnimationFrame(()=>holder.classList.remove('is-teleporting')));}
+      holder.dataset.offset=String(offset);peek.hidden=offset===0;target.hidden=offset===0;
+    });
+    deckCards[active]?.holder.append(scene);
+  }
   document.getElementById('prev').innerHTML=icon('left');
   document.getElementById('next').innerHTML=icon('right');
   document.getElementById('motion-toggle').innerHTML=icon('pause');
@@ -73,6 +96,7 @@
     if(dialog.open) return;
     if(next===active && mascot.dataset.ready) return;
     active=next;
+    positionDeck();
     const team=teams[active];
     page.dataset.team=team.id;
     frame.src=`assets/frame-${team.id}.svg`;
@@ -85,7 +109,7 @@
     mascot.alt=`${team.name}的${team.character}，统一二头身形象`;
     mascot.dataset.ready='true';
     tabs.querySelectorAll('button').forEach((button,i)=>button.setAttribute('aria-pressed',String(i===active)));
-    document.getElementById('team-announcement').textContent=`${team.name}，队娘${team.character}，第${active+1}队，共5队。本页数据为美术演示。`;
+    document.getElementById('team-announcement').textContent=`${team.name} Bingo，队娘${team.character}，第${active+1}张，共5张。任何队伍都可做这张棋盘的任务。本页数据为美术演示。`;
     board.setAttribute('aria-label',`${team.name}，${regions[region-1]}，5乘5任务棋盘`);
     clearTimeout(entranceTimer);
     scene.classList.remove('is-entering');
@@ -102,7 +126,7 @@
   function applyMotion(){page.classList.toggle('motion-paused',paused||document.visibilityState==='hidden');}
   document.getElementById('motion-toggle').addEventListener('click',event=>{paused=!paused;const button=event.currentTarget;button.innerHTML=icon(paused?'play':'pause');button.setAttribute('aria-label',paused?'开启动效':'暂停动效');button.setAttribute('aria-pressed',String(paused));applyMotion();});
   document.addEventListener('visibilitychange',applyMotion);
-  renderBoard();selectTeam(0);applyMotion();
+  renderBoard();buildDeck();selectTeam(0);applyMotion();
   const requestedTeam=new URLSearchParams(location.search).get('team');
   const index=teams.findIndex(t=>t.id===requestedTeam);
   if(index>=0)selectTeam(index);

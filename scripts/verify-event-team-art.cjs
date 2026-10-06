@@ -6,7 +6,7 @@ const sharp=require('C:/Users/24175/.cache/codex-runtimes/codex-primary-runtime/
  const browser=await chromium.launch({channel:'chrome',headless:true}),page=await browser.newPage({viewport:{width:1440,height:1050},deviceScaleFactor:1});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`)});
  await page.goto('http://127.0.0.1:3000/previews/team-bingo-event-v3/index.html');await page.locator('.cell').first().waitFor();
- await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));});
+ await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.querySelectorAll('.edge-art,.team-mascot,.cell-preview,.team-tab img')].map(img=>img.decode().catch(()=>{})));});
  assert.equal(await page.locator('.cell').count(),25);assert.equal(await page.locator('.cell-direct-icon').count(),6);assert.equal(await page.locator('.team-tab').count(),5);
  const assets=['geopelia','hikari','para','salt','iro'];
  for(let i=0;i<5;i++){

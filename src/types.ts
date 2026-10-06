@@ -20,6 +20,9 @@ export type TaskState = "available" | "pending" | "awarded" | "locked";
 
 export interface Task {
   id: string;
+  /** 任务所属的主题棋盘，不是允许提交的队伍。 */
+  boardId?: string;
+  pointsConfigured?: boolean;
   regionId: string;
   title: string;
   brief: string;

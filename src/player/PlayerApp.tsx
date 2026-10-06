@@ -23,7 +23,8 @@ import {
 import type { GameCard, GameMessage, Task, TeamStatus } from "../types";
 import { Modal, StatusChip } from "../components/ui";
 import { getPhotoClue, photoRegions } from '../data/photoClues';
-import { TeamBingo } from './TeamBingo';
+import { BingoDeck } from './BingoDeck';
+import { groupBingoTasks } from '../data/bingoBoards';
 import { teams } from '../data/mock';
 
 interface PlayerAppProps {
@@ -67,6 +68,7 @@ export function PlayerApp({
   const region = photoRegions.find(item => item.id === approvedRegionId);
   const regionId = region?.id ?? '';
   const currentTasks = useMemo(() => tasks, [tasks]);
+  const bingoBoards = useMemo(() => groupBingoTasks(currentTasks, team.id, team.name), [currentTasks, team.id, team.name]);
   const selectedPhoto = selectedTask ? getPhotoClue(regionId, selectedTask.sharedSlot ?? '') : null;
   const motionPaused = !pageVisible || Boolean(selectedTask || selectedCard || showMessages || playingCard);
   const unreadCount = messages.filter((message) => message.unread).length;
@@ -135,18 +137,17 @@ export function PlayerApp({
       <main className="player-game-layout" id="main-content" tabIndex={-1}>
         <div className="mission-column">
           <section className="bingo-panel bingo-panel--themed" aria-label="任务栏">
-            <TeamBingo
-              teamId={team.id}
-              teamName={team.name}
+            <BingoDeck
+              actorTeamId={team.id}
               approvedRegionId={approvedRegionId}
               paused={motionPaused}
-              items={currentTasks.map(task => ({
+              boards={bingoBoards.map(board => ({ ...board, items: board.tasks.map(task => ({
                 id: task.id,
                 slot: task.sharedSlot,
-                points: task.configured === false ? undefined : task.points,
+                points: task.configured === false || task.pointsConfigured === false ? undefined : task.points,
                 state: task.configured === false ? 'unconfigured' : task.state,
                 pendingCount: task.pendingCount
-              }))}
+              })) }))}
               onSelect={id => setSelectedTask(currentTasks.find(task => task.id === id) ?? null)}
             />
           </section>
@@ -235,7 +236,7 @@ export function PlayerApp({
             <figcaption><span>图寻 #{selectedPhoto.number}</span><a href={selectedPhoto.original} target="_blank" rel="noopener noreferrer">打开原尺寸图 ↗</a></figcaption>
           </figure> : <div className="task-direct-note">{selectedTask.sharedSlot?.startsWith('P') ? <><LockKeyhole size={22} aria-hidden="true" /><span>区域入口尚未审核通过，图寻图片未开放。</span></> : <><Zap size={22} aria-hidden="true" /><span>此格无需图寻，按任务要求完成即可。</span></>}</div>}
           <div className="detail-meta">
-            {selectedTask.configured === false ? <StatusChip tone="neutral">待配置</StatusChip> : <><StatusChip tone={selectedTask.difficulty === "挑战" ? "danger" : selectedTask.difficulty === "标准" ? "warning" : "success"}>{selectedTask.difficulty}</StatusChip><strong>{selectedTask.points} 分</strong></>}
+            {selectedTask.configured === false ? <StatusChip tone="neutral">待配置</StatusChip> : <><StatusChip tone={selectedTask.difficulty === "挑战" ? "danger" : selectedTask.difficulty === "标准" ? "warning" : "success"}>{selectedTask.difficulty}</StatusChip><strong>{selectedTask.pointsConfigured === false ? '分值待配置 · 本地演示' : `${selectedTask.points} 分`}</strong></>}
             {selectedTask.pendingCount ? <span>{selectedTask.pendingCount} 队审核中</span> : null}
           </div>
           {!region && selectedTask.sharedSlot?.startsWith('P') ? <div className="locked-panel"><LockKeyhole size={24} aria-hidden="true" /><div><strong>等待入口审核</strong><p>工作人员通过后才开放本区域图片。</p></div></div> : selectedTask.configured === false ? <div className="locked-panel"><Camera size={24} aria-hidden="true" /><div><strong>任务待配置</strong><p>图片已接入，正式任务与分值尚未填写，暂不开放提交。</p></div></div> : selectedTask.state === "locked" ? (

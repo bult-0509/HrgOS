@@ -19,6 +19,8 @@ interface Props {
   items: BingoItem[];
   onSelect: (id: string) => void;
   paused?: boolean;
+  motionEnabled?: boolean;
+  onToggleMotion?: () => void;
 }
 
 export function photoSlotFor(item: Pick<BingoItem,'slot'>, index: number) {
@@ -26,10 +28,11 @@ export function photoSlotFor(item: Pick<BingoItem,'slot'>, index: number) {
 }
 
 /** 美术层只消费本队已批准状态，不修改区域、得分、任务或审核权限。 */
-export function TeamBingo({teamId,teamName,approvedRegionId,items,onSelect,paused=false}: Props) {
+export function TeamBingo({teamId,teamName,approvedRegionId,items,onSelect,paused=false,motionEnabled:controlledMotion,onToggleMotion}: Props) {
   const theme=getTeamBingoTheme(teamId);
   const region=photoRegions.find(r=>r.id===approvedRegionId);
-  const [motionEnabled,setMotionEnabled]=useState(true);
+  const [localMotion,setMotionEnabled]=useState(true);
+  const motionEnabled=controlledMotion??localMotion;
   const [visible,setVisible]=useState(true);
   useEffect(()=>{
     const update=()=>setVisible(document.visibilityState!=='hidden');update();
@@ -52,7 +55,7 @@ export function TeamBingo({teamId,teamName,approvedRegionId,items,onSelect,pause
             {photoRegions.map(r=><li key={r.id} className={region?.id===r.id?'is-current':region&&r.number<region.number?'is-passed':'is-locked'} aria-current={region?.id===r.id?'step':undefined} aria-label={`${r.name}，${region?.id===r.id?'当前区域':region&&r.number<region.number?'已通过':'待工作人员审核'}`}><span>{String(r.number).padStart(2,'0')}</span>{!region||r.number>region.number?<LockKeyhole size={11} aria-hidden="true"/>:null}</li>)}
           </ol>
           <span className="tb-progress" aria-label={`已计分 ${finished} 格，待审核 ${pending} 格，共 ${items.length} 格`}><Check size={15} aria-hidden="true"/><b>{String(finished).padStart(2,'0')}</b><span>/{items.length}</span></span>
-          <button className="tb-motion" type="button" aria-label={motionEnabled?'暂停动效':'开启动效'} aria-pressed={!motionEnabled} onClick={()=>setMotionEnabled(v=>!v)}>{motionEnabled?<Pause size={15}/>:<Play size={15}/>}</button>
+          <button className="tb-motion" type="button" aria-label={motionEnabled?'暂停动效':'开启动效'} aria-pressed={!motionEnabled} onClick={onToggleMotion??(()=>setMotionEnabled(v=>!v))}>{motionEnabled?<Pause size={15}/>:<Play size={15}/>}</button>
         </div>
         <p className="sr-only" role="status">{region?`当前：${region.name}。工作人员通过本队下一地区入口审核后，19 张图统一更新，任务和分数保留。`:'等待工作人员审核区域入口，尚未开放图寻图片。'}</p>
         <div className="bingo-board bingo-board--photos tb-grid" role="group" aria-label={`${region?.name??'待区域审核'} 5乘5任务棋盘`}>

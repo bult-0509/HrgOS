@@ -6,6 +6,7 @@
 
 - 五队 Bingo 美术、独立边框和审阅页：`previews/team-bingo-event-v3/`，设计记录位于 `design-system/hrg-game/pages/`。
 - 五套美术已接入玩家页面与正式比赛界面（`/?live=cards`），共用 `src/player/TeamBingo.tsx`；角色、独立边框放在 `public/images/team-bingo/`。队娘位于棋盘左上方、棋盘底板之下，不覆盖任务点击区域。任务说明和清晰图仍只能点格子查看。
+- 五张主题Bingo是共享任务分类，不是队伍的权限边界。任意队伍都能通过`BingoDeck`的左右按钮、主题入口、键盘或滑动切换并提交其他棋盘的任务。五卡整卡横移动效已恢复；登录身份、积分、定位与已审核区域不随看板切换。
 - 活动公示及规则海报：`previews/hrg-event-announcement/`、`previews/hrg-event-announcement-v2/`、`previews/hrg-rules-poster/`；项目根目录包含两张成品海报。
 - 图寻原图、评估、处理方案和三个区域共 57 张成品：`outputs/photo-review-20261006/`、`outputs/photo-styles-review-20261006/`、`outputs/photo-final-20261006/`；根目录拍摄地点表保留原始标注。前端使用 `public/images/photo-clues/` 的交付素材。
 - 125 项挑战的最新命名版：[HRG挑战任务汇总_任务命名版.xlsx](outputs/task-integration-20261006/HRG挑战任务汇总_任务命名版.xlsx)，同目录保留来源、难度调整、构建脚本和历史版本。
@@ -48,7 +49,7 @@ npm run dev
 ## 已实现范围
 
 - 玩家端：区域进度、任务图库、图片单张提交、卡牌使用、消息中心、事件与排名快照展示。
-- 区域按队独立推进，玩家不能自由切区。工作人员通过下一地区入口审核后，该队 19 张图寻图片统一更新；固定 25 项任务、6 个直接任务、分数和完成状态不重置。区域进度只读，普通任务审核和入口提交本身都不换区。
+- 区域按参赛队独立推进，玩家不能自由切区。工作人员通过本队下一地区入口审核后，五张Bingo各自复用的19张图统一更新；固定五套各25项任务、各6个直接任务、分数和完成状态不重置。区域进度只读，普通任务审核和入口提交本身都不换区。
 - 工作人员端：总览、FIFO 审核队列、队长位置、离线/完赛标识、现场完赛确认与操作留痕展示。
 - 技术基础：React + TypeScript + Vite、PWA manifest/service worker、响应式布局、本地阿里妈妈方圆体。
 - 解耦接口：棋盘通过 `BoardAdapter` 提供任务状态与选择事件，后续视觉方案可直接替换。
@@ -77,3 +78,5 @@ npm run test:lab
 演示页面的区域审核由 `src/domain/regionProgress.ts` 的 reducer 演示，PlayerApp 只读接收 `approvedRegionId`。正式比赛界面从服务器取得本队已批准的 `regionId`，提交到达证据不会立即换区，工作人员审核通过后才统一更新 19 张图。独立美术预览只显示区域 02 快照，不提供区域切换。
 
 棋盘美术与正式提交入口的本机浏览器验证：`node scripts/verify-bingo-integration.cjs`，覆盖五队、两套页面、五种屏幕尺寸、图层顺序、装饰与点击区域、清晰图弹窗、提交失败保留草稿及审核换区。该验证拦截 API，不会操作真实比赛；截图及报告位于 `artifacts/bingo-integration-20261007/`（不提交仓库）。
+
+正式任务配置接受125项全局唯一任务，每项`boardId`为`team-1`至`team-5`，每个主题25项；`boardId`只决定分类，不限制提交队伍。服务端根据会话记录提交队伍，不信任请求中传入的队伍身份。可省略整张棋盘的`sharedSlot`采用既定19+6布局，或完整指定P01–P19和D01–D06。旧25项配置继续显示其真实单棋盘，不重复生成125项。演示页的125项来源是`outputs/task-integration-20261006/integrated-data.json`，原表保留，演示分值尚未配置。

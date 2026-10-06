@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import sharp from 'sharp';
+import { normalizeBingoTasks } from './bingoBoards.mjs';
 import { abilityCommand, abilityView, abilityTick, abilityScoreAccess, abilityLocation, abilityResultView, taskPermissions, abilityTaskReviewed, validateReserveTasks } from './abilityCards.mjs';
 
 export class RuleError extends Error {
@@ -63,7 +64,7 @@ export function stateView(state, actor) {
     return { ...common, teams: state.teams.map(team => ({ ...team, score: score(state, team.id) })), allFinished: state.teams.every(team => team.finishedAt != null), queue: state.submissions.filter(item => item.status === 'QUEUED'), submissions: state.submissions, awards: state.awards, ledger: state.ledger, events: state.events, cardRequests: state.cardRequests, effects: state.effects, snapshots: state.snapshots, audit: state.audit, locations: actor.locations ? state.teams.map(team => locationView(state, team)) : undefined, locationHistory: actor.locations ? state.locationHistory : undefined, storage: { metadataBytes: Buffer.byteLength(metadata), warning: Buffer.byteLength(metadata) >= state.config.storageWarnBytes }, finishBlockers: { queued: state.submissions.filter(item => item.status === 'QUEUED').length, pendingCards: state.cardRequests.filter(item => item.status === 'PENDING').length } };
   }
   const team = teamFor(state, actor);
-  const tasks = state.config.tasks.map(task => ({ id: task.id, image: task.image, sharedSlot: task.id, awarded: !!state.awards[task.id], pendingCount: state.submissions.filter(item => item.taskId === task.id && item.status === 'QUEUED').length, ...(team.regionId ? { title: task.title, points: task.points, brief: task.brief } : {}) }));
+  const tasks = state.config.tasks.map(task => ({ id: task.id, boardId: task.boardId, image: task.image, sharedSlot: task.sharedSlot ?? task.id, awarded: !!state.awards[task.id], pendingCount: state.submissions.filter(item => item.taskId === task.id && item.status === 'QUEUED').length, ...(team.regionId ? { title: task.title, points: task.points, brief: task.brief } : {}) }));
   return { ...common, team: { ...team, score: score(state, team.id) }, tasks, submissions: state.submissions.filter(item => item.teamId === team.id), cards: state.cards.filter(card => card.teamId === team.id), events: state.events.filter(event => event.teamId === team.id), effects: state.effects.filter(effect => effect.teamId === team.id), location: locationView(state, team) };
 }
 export function visibleMessages(state, actor, after = 0) {
@@ -115,12 +116,11 @@ export async function executeCommand(state, actor, command, key) {
   let result;
   if (command.type === 'game_configure') {
     manage(actor); requireRule(state.mode === 'live' && state.status === 'READY' && command.reason?.trim(), 'CONFIG_INVALID', 400);
-    const tasks = command.tasks;
-    requireRule(Array.isArray(tasks) && tasks.length === 25 && new Set(tasks.map(task => task.id)).size === 25 && tasks.every(task => typeof task.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(task.id) && typeof task.title === 'string' && task.title.trim() && task.title.length <= 100 && typeof task.brief === 'string' && task.brief.trim() && task.brief.length <= 2000 && Number.isSafeInteger(task.points) && task.points > 0 && task.points <= 10000), 'TASK_CONFIG_INVALID', 400);
+    const tasks = normalizeBingoTasks(command.tasks, requireRule);
     const rewards = command.boardRewards ?? [];
     const reserveTasks = validateReserveTasks(command.reserveTasks ?? state.config.reserveTasks ?? [], tasks, requireRule);
     requireRule(Array.isArray(rewards) && rewards.every(reward => Array.isArray(reward.tasks) && reward.tasks.length && reward.tasks.every(id => tasks.some(task => task.id === id)) && Number.isSafeInteger(reward.points) && reward.points >= 0 && reward.points <= 10000), 'REWARD_CONFIG_INVALID', 400);
-    state.configHistory.push(structuredClone(state.config)); state.config.tasks = tasks.map(({ id, title, brief, points }) => ({ id, title, brief, points, image: '/hrg-mark.svg' })); state.config.reserveTasks = reserveTasks; state.config.boardRewards = rewards; state.config.version++; state.configured = true;
+    state.configHistory.push(structuredClone(state.config)); state.config.tasks = tasks; state.config.reserveTasks = reserveTasks; state.config.boardRewards = rewards; state.config.version++; state.configured = true;
     result = { configured: true, version: state.config.version };
   } else if (command.type.startsWith('ability_')) {
     result = abilityResultView(await abilityCommand(state, actor, command, { requireRule, manage, requireRunning, elapsed, score, credit, message, ranking, prepareMedia: (state, input, teamId) => prepareMedia(state, input, teamId, true) }), actor);

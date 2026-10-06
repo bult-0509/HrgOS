@@ -2,7 +2,8 @@ import { useCallback, useRef, useState } from "react";
 import { ToastStack } from "./components/ui";
 import { WaitingScreen } from "./components/WaitingScreen";
 import type { LoginSession } from "./domain/loginAccess";
-import { initialAuditQueue, initialBingoTasks, initialCards, initialMessages, teams as initialTeams } from "./data/mock";
+import { initialAuditQueue, initialCards, initialMessages, teams as initialTeams } from "./data/mock";
+import { initialSharedBingoTasks } from './data/sharedBingoTasks';
 import { enqueueAuditItem } from "./domain/auditQueue";
 import { reviewAudit, type ReviewState } from './domain/regionProgress';
 import { PlayerApp } from "./player/PlayerApp";
@@ -18,7 +19,7 @@ function nowLabel() {
 }
 
 export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; account: LoginSession; onLogout: () => void }) {
-  const [tasks, setTasks] = useState<Task[]>(initialBingoTasks);
+  const [tasks, setTasks] = useState<Task[]>(initialSharedBingoTasks);
   const [cards, setCards] = useState<GameCard[]>(initialCards);
   const [messages, setMessages] = useState<GameMessage[]>(() => {
     const team = initialTeams.find((candidate) => candidate.id === account.teamId);

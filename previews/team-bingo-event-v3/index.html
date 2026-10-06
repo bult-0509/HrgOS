@@ -4,21 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101424">
-  <title>HRG · 五队 Bingo 角色美术预览</title>
+  <title>HRG · 五张共享 Bingo 美术预览</title>
   <link rel="stylesheet" href="event.css?rev=staff-region-1">
-  <link rel="stylesheet" href="team-frames.css?rev=mascot-under-1">
-  <script src="event.js?rev=staff-region-1" defer></script>
+  <link rel="stylesheet" href="team-frames.css?rev=shared-bingo-deck">
+  <script src="event.js?rev=shared-bingo-deck" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#board">跳到任务棋盘</a>
   <main class="event-page" id="event-page">
-    <h1 class="sr-only">五队 Bingo 角色美术预览</h1>
+    <h1 class="sr-only">五张共享 Bingo 角色美术预览</h1>
     <header class="event-hud">
-      <div class="team-counter" aria-label="当前队伍序号"><b id="team-counter">01</b><span>/ 05</span></div>
+      <div class="team-counter" aria-label="当前棋盘序号"><b id="team-counter">01</b><span>/ 05</span></div>
       <div class="hud-metrics" id="hud-metrics"></div>
       <button class="icon-button motion-toggle" id="motion-toggle" type="button" aria-label="暂停动效" aria-pressed="false"></button>
     </header>
-    <section class="event-stage" aria-label="队伍棋盘切换">
+    <section class="event-stage" aria-label="Bingo 棋盘切换">
       <div class="side-echo side-echo--left" aria-hidden="true"></div>
       <div class="side-echo side-echo--right" aria-hidden="true"></div>
       <article class="board-scene" id="board-scene">
@@ -37,10 +37,10 @@
         <img class="team-mascot" id="team-mascot" src="assets/geopelia.webp" alt="Phigros 队的鸠，二头身形象" width="600" height="650">
       </article>
     </section>
-    <nav class="team-controls" aria-label="切换队伍">
-      <button class="icon-button team-prev" id="prev" type="button" aria-label="上一队"></button>
+    <nav class="team-controls" aria-label="切换 Bingo 棋盘，不切换参赛身份">
+      <button class="icon-button team-prev" id="prev" type="button" aria-label="上一张 Bingo"></button>
       <div class="team-tabs" id="team-tabs"></div>
-      <button class="icon-button team-next" id="next" type="button" aria-label="下一队"></button>
+      <button class="icon-button team-next" id="next" type="button" aria-label="下一张 Bingo"></button>
     </nav>
     <p class="sr-only" id="team-announcement" role="status" aria-live="polite" aria-atomic="true"></p>
   </main>

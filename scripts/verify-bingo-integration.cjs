@@ -13,6 +13,7 @@ const assert = require('node:assert/strict');
   const fixture = seedState([]);
   fixture.teams = ['Phigros队', 'Arcaea队', '范式起源队', 'maimai队', '全能队'].map((name, i) => ({ id: `team-${i + 1}`, name, regionId: 'stage-b', regionVersion: 2, finishedAt: null }));
   fixture.status = 'RUNNING'; fixture.runningSince = fixture.now;
+  fixture.config.tasks = fixture.teams.flatMap(board => Array.from({ length: 25 }, (_, i) => ({ id: `${board.id}-T${i + 1}`, boardId: board.id, title: `${board.name}真实测试任务${i + 1}`, brief: '测试要求', points: 5 })));
   let liveTeam = 'team-1', rejectSubmission = false;
   const commands = [], errors = [], results = [];
   const themes = ['phigros', 'arcaea', 'paradigm', 'maimai', 'community'];
@@ -30,8 +31,8 @@ const assert = require('node:assert/strict');
     const reactDOM = main.match(/from "([^"]*react-dom_client\.js[^\"]*)"/)[1];
     const html = `<!doctype html><html lang="zh-CN"><head>${preamble}<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/src/styles.css"><link rel="stylesheet" href="/src/redesign.css"><link rel="stylesheet" href="/src/player/photoBoard.css"></head><body><div id="root"></div><script type="module">
       import React from ${JSON.stringify(react)};import ReactDOM from ${JSON.stringify(reactDOM)};
-      import {PlayerApp} from '/src/player/PlayerApp.tsx';import {initialBingoTasks,teams} from '/src/data/mock.ts';
-      function Test(){const [team,setTeam]=React.useState(0);window.__setTeam=setTeam;const noop=()=>{};return React.createElement(PlayerApp,{team:teams[team],tasks:initialBingoTasks,approvedRegionId:'stage-b',cards:[],messages:[],onLogout:noop,onSubmitTask:noop,onUseCard:noop,onReadMessage:noop});}
+      import {PlayerApp} from '/src/player/PlayerApp.tsx';import {teams} from '/src/data/mock.ts';import {initialSharedBingoTasks} from '/src/data/sharedBingoTasks.ts';
+      function Test(){const [team,setTeam]=React.useState(0);window.__setTeam=setTeam;const noop=()=>{};return React.createElement(PlayerApp,{team:teams[team],tasks:initialSharedBingoTasks,approvedRegionId:'stage-b',cards:[],messages:[],onLogout:noop,onSubmitTask:noop,onUseCard:noop,onReadMessage:noop});}
       ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Test));
     </script></body></html>`;
     await page.route('**/__bingo-integration-test', route => route.fulfill({ contentType: 'text/html', body: html }));
@@ -55,8 +56,8 @@ const assert = require('node:assert/strict');
       await page.locator('.tb-cell').first().waitFor();
     };
     const check = async (mode, index, viewport) => {
-      await page.evaluate(async () => { await document.fonts.ready; await Promise.all([...document.querySelectorAll('.team-bingo img')].map(img => img.decode())); });
-      const state = await page.locator('.team-bingo').evaluate(root => {
+      await page.evaluate(async () => { await document.fonts.ready; await Promise.all([...document.querySelectorAll('.team-bingo:not(.bingo-peek) img')].map(img => img.decode())); await Promise.all([...document.querySelectorAll('.bingo-deck__card')].flatMap(card => card.getAnimations()).map(animation => animation.finished.catch(() => {}))); });
+      const state = await page.locator('.team-bingo:not(.bingo-peek)').evaluate(root => {
         const rect = el => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
         const mascot = root.querySelector('.tb-mascot'), frame = root.querySelector('.tb-frame'), surface = root.querySelector('.tb-board-surface'), core = root.querySelector('.tb-core');
         const cells = [...root.querySelectorAll('.tb-cell')];
@@ -90,7 +91,7 @@ const assert = require('node:assert/strict');
     await page.locator('.tb-cell').first().waitFor();
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
-      for (let i = 0; i < 5; i++) { await page.evaluate(i => window.__setTeam(i), i); await page.locator(`[data-bingo-theme=${themes[i]}]`).waitFor(); await check('demo', i, viewport); }
+      for (let i = 0; i < 5; i++) { await page.evaluate(i => window.__setTeam(i), i); await page.locator(`.bingo-deck__card[data-board-id=team-${i+1}][data-offset="0"]`).waitFor(); await check('demo', i, viewport); }
     }
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
@@ -98,6 +99,11 @@ const assert = require('node:assert/strict');
     }
     await page.setViewportSize({ width: 375, height: 812 });
     liveTeam = 'team-1'; await loginLive();
+    assert.equal(await page.locator('.bingo-deck__tabs button').count(), 5);
+    await page.getByRole('button', { name: '下一张 Bingo', exact: true }).click();
+    await page.locator('.bingo-deck__card[data-board-id=team-2][data-offset="0"]').waitFor();
+    assert((await page.locator('.ability-header h1').innerText()).includes('Phigros队'), '切换Bingo不能改登录身份');
+    assert((await page.locator('.photo-preview__base').evaluateAll(images => images.map(img => img.src))).every(url => url.includes('/region-2/')));
     await page.locator('.tb-cell[data-slot=P01]').click();
     await page.locator('.task-photo-detail img').evaluate(img => img.decode());
     assert((await page.locator('.task-photo-detail img').getAttribute('src')).includes('/region-2/01.webp'));
@@ -111,7 +117,32 @@ const assert = require('node:assert/strict');
     rejectSubmission = false;
     await page.getByRole('button', { name: '提交任务审核', exact: true }).click();
     await page.locator('[role=dialog]').waitFor({ state: 'hidden' });
-    assert.equal(commands.at(-1).kind, 'task'); assert.equal(commands.at(-1).regionId, 'stage-b'); assert.equal(commands.at(-1).taskId, 'T10');
+    assert.equal(commands.at(-1).kind, 'task'); assert.equal(commands.at(-1).regionId, 'stage-b'); assert.equal(commands.at(-1).taskId, 'team-2-T10'); assert.equal(commands.at(-1).teamId, undefined);
+    const selectedTab = page.locator('.bingo-deck__tabs button[aria-pressed=true]'); await selectedTab.focus();
+    await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight');
+    await page.locator('.bingo-deck__card[data-board-id=team-1][data-offset="0"]').waitFor();
+    assert.equal(await page.locator('.bingo-deck__tabs button[aria-pressed=true]').count(), 1);
+    await page.getByRole('button', { name: '上一张 Bingo', exact: true }).click();
+    await page.locator('.bingo-deck__card[data-board-id=team-5][data-offset="0"]').waitFor();
+    await page.locator('.tb-cell').nth(12).scrollIntoViewIfNeeded();
+    const touch = await page.context().newCDPSession(page);
+    const swipe = async (dx, dy = 0) => {
+      // 在固定视口内起手，不能用正在横移的卡片位置作为下一次手势起点。
+      const box = await page.locator('.bingo-deck__viewport').boundingBox();
+      const x = box.x + box.width / 2, y = box.y + box.height / 2;
+      const point = (x, y) => [{ x, y, radiusX: 3, radiusY: 3, force: 1, id: 1 }];
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: point(x, y) });
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: point(x + dx, y + dy) });
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    };
+    await swipe(-90);
+    await page.locator('.bingo-deck__card[data-board-id=team-1][data-offset="0"]').waitFor();
+    assert.equal(await page.locator('[role=dialog]').count(), 0, '横滑不得顺手打开任务');
+    await swipe(90);
+    await page.locator('.bingo-deck__card[data-board-id=team-5][data-offset="0"]').waitFor();
+    await swipe(8, -80);
+    assert.equal(await page.locator('.bingo-deck__card[data-board-id=team-5][data-offset="0"]').count(), 1, '纵向滚动不得切卡');
+    await touch.detach();
     const before = await page.locator('.photo-preview__base').evaluateAll(images => images.map(img => img.src));
     await page.locator('.live-arrival summary').click();
     await page.locator('.live-arrival input[type=file]').setInputFiles({ name: 'arrival.png', mimeType: 'image/png', buffer: await sharp({ create: { width: 8, height: 8, channels: 3, background: '#fff' } }).png().toBuffer() });
@@ -122,12 +153,12 @@ const assert = require('node:assert/strict');
     fixture.teams[0].regionId = 'stage-c'; fixture.teams[0].regionVersion++;
     await page.waitForFunction(() => [...document.querySelectorAll('.photo-preview__base')].every(img => img.src.includes('/region-3/')));
     await page.getByRole('button', { name: '暂停动效', exact: true }).click();
-    assert(await page.locator('.team-bingo').evaluate(root => root.classList.contains('tb-paused')));
+    assert(await page.locator('.team-bingo:not(.bingo-peek)').evaluate(root => root.classList.contains('tb-paused')));
     await page.emulateMedia({ reducedMotion: 'reduce' });
     assert.equal(await page.locator('.photo-preview__haze').first().evaluate(img => getComputedStyle(img).animationName), 'none');
     assert.deepEqual(errors, []);
-    const report = { checks: results, clearDetailOnlyOnClick: true, taskSubmitUsesApprovedRegion: true, submissionFailurePreservesDraft: true, arrivalDoesNotSwitchBeforeApproval: true, approvalChangesAll19: true, pauseAndReducedMotion: true, browserErrors: errors };
+    const report = { checks: results, crossBoardSubmission: true, sameActorAndApprovedRegionAcrossBoards: true, rapidKeyboardAndCyclicNavigation: true, touchSwipeAndScrollIsolation: true, clearDetailOnlyOnClick: true, taskSubmitUsesApprovedRegion: true, submissionFailurePreservesDraft: true, arrivalDoesNotSwitchBeforeApproval: true, approvalChangesAll19: true, pauseAndReducedMotion: true, browserErrors: errors };
     await fs.writeFile(path.join(out, 'verification.json'), JSON.stringify(report, null, 2));
-    console.log(JSON.stringify({ layoutsChecked: results.length, modes: ['demo', 'live'], teams: 5, viewports: 5, rearUpperLeftMascots: true, decorationPixelsInCells: 0, clearDetailAndSubmission: 'pass', approvedRegionSync: 'pass', browserErrors: errors }));
+    console.log(JSON.stringify({ layoutsChecked: results.length, modes: ['demo', 'live'], boards: 5, tasks: 125, viewports: 5, crossBoardSubmission: 'pass', rapidCyclicKeyboardNavigation: 'pass', touchSwipeAndScrollIsolation: 'pass', rearUpperLeftMascots: true, decorationPixelsInCells: 0, clearDetailAndSubmission: 'pass', approvedRegionSync: 'pass', browserErrors: errors }));
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

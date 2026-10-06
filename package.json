@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:backend": "node --test server/rules.check.mjs server/persistence.check.mjs server/abilities.check.mjs server/live.check.mjs server/periodicCards.check.mjs",
+    "test:backend": "node --test server/rules.check.mjs server/persistence.check.mjs server/abilities.check.mjs server/live.check.mjs server/periodicCards.check.mjs server/bingoBoards.check.mjs",
     "test:abilities": "node --env-file-if-exists=.env.test.local scripts/test-rules.mjs --abilities",
     "test:abilities:local": "node scripts/test-rules.mjs --local --abilities",
     "test:rules": "node --env-file-if-exists=.env.test.local scripts/test-rules.mjs",

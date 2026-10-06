@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Modal } from '../components/ui';
 import { getPhotoClue, photoRegions } from '../data/photoClues';
-import { TeamBingo, photoSlotFor } from '../player/TeamBingo';
+import { photoSlotFor } from '../player/TeamBingo';
+import { BingoDeck } from '../player/BingoDeck';
+import { groupBingoTasks } from '../data/bingoBoards';
 import { uploadMedia } from './client';
 
 interface LiveTask {
   id: string;
+  boardId?: string;
   sharedSlot?: string;
   title?: string;
   brief?: string;
@@ -35,7 +38,9 @@ export function LiveTaskBoard({ team, tasks, status, busy, blocked, assignment, 
   const region = photoRegions.find(item => item.id === team.regionId);
   const nextRegion = photoRegions.find(item => item.number === (region?.number ?? 0) + 1);
   const selected = tasks.find(task => task.id === selectedId);
-  const selectedSlot = selected ? photoSlotFor({ slot: selected.sharedSlot }, tasks.indexOf(selected)) : '';
+  const boards = groupBingoTasks(tasks, team.id, team.name);
+  const selectedBoard = selected ? boards.find(board => board.tasks.includes(selected)) : undefined;
+  const selectedSlot = selected ? photoSlotFor({ slot: selected.sharedSlot }, selectedBoard?.tasks.indexOf(selected) ?? 0) : '';
   const selectedPhoto = getPhotoClue(team.regionId ?? '', selectedSlot ?? '');
   const currentRegion = useRef(team.regionId);
   currentRegion.current = team.regionId;
@@ -72,9 +77,9 @@ export function LiveTaskBoard({ team, tasks, status, busy, blocked, assignment, 
   const cannotSubmit = busy || sending || status !== 'RUNNING' || team.finishedAt != null;
 
   return <section className="live-task-board" aria-label="任务栏">
-    <TeamBingo teamId={team.id} teamName={team.name} approvedRegionId={team.regionId} paused={!!selected}
-      items={tasks.map(task => ({ id: task.id, slot: task.sharedSlot, points: task.points,
-        state: task.awarded ? 'awarded' : task.pendingCount ? 'pending' : team.regionId ? 'available' : 'locked', pendingCount: task.pendingCount }))}
+    <BingoDeck actorTeamId={team.id} approvedRegionId={team.regionId} paused={!!selected || sending}
+      boards={boards.map(board => ({ ...board, items: board.tasks.map(task => ({ id: task.id, slot: task.sharedSlot, points: task.points,
+        state: task.awarded ? 'awarded' : task.pendingCount ? 'pending' : team.regionId ? 'available' : 'locked', pendingCount: task.pendingCount })) }))}
       onSelect={id => { setTaskFile(null); setError(''); setSelectedId(id); }} />
     {assignment ? <p className="ability-alert">下一任务：{assignment.taskId}{assignment.kind === 'extra' ? '，请从对应能力卡提交证据。' : ''}</p> : null}
     {notice ? <p role="status">{notice}</p> : null}
