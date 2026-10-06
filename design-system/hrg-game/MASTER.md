@@ -39,7 +39,7 @@
 
 ## Component rules
 
-- Bingo cells expose number, score and public state only. Title and instructions appear after opening a cell.
+- Bingo cells expose number, score, difficulty color and public state only. Opening a photo cell reveals the reference image, not the task. Its task title and instructions require staff-approved photo replication; direct cells need no photo search.
 - Tactical cards use an original fanned deck, category color and short deal/play motion. Do not copy commercial game art.
 - Data tables, audit queues and maps prioritize scan speed over decoration.
 - Buttons use flat fills or single borders. Primary action is lime; danger remains red.

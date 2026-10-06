@@ -16,7 +16,17 @@ test('正式比赛独立鉴权、必须配置真实任务；账本在重启后�
   let store = await createLocalStore(directory); let app = await createTestServer({ store, gameAdminKey, testKey, liveAccounts, enabled: true });
   try {
     assert.equal((await app.inject({ method: 'POST', url: '/api/games', headers: { authorization: `Bearer ${testKey}` } })).statusCode, 401);
-    const created = await app.inject({ method: 'POST', url: '/api/games', headers: { authorization: `Bearer ${gameAdminKey}` } }); assert.equal(created.statusCode, 201);
+    const preset = await app.inject({ method: 'POST', url: '/api/games', headers: { authorization: `Bearer ${gameAdminKey}` }, payload: {} });
+    assert.equal(preset.statusCode, 201); assert.equal(preset.json().configured, true); assert.equal(preset.json().scoringVersion, 'hrg-20261007-v1');
+    const presetId = preset.json().id;
+    const presetHost = (await app.inject({ method: 'POST', url: `/api/games/${presetId}/login`, payload: { username: 'hrg-staff-01', role: 'staff', password } })).json().token;
+    const presetPlayer = (await app.inject({ method: 'POST', url: `/api/games/${presetId}/login`, payload: { username: 'fixture-player', role: 'player', password } })).json().token;
+    const officialView = (await app.inject({ url: `/api/games/${presetId}/state`, headers: { authorization: `Bearer ${presetHost}` } })).json();
+    assert.equal(officialView.taskCatalog.length, 125); assert.deepEqual(officialView.finishRewards, [800, 600, 400, 250, 100]);
+    const hiddenView = (await app.inject({ url: `/api/games/${presetId}/state`, headers: { authorization: `Bearer ${presetPlayer}` } })).json();
+    assert.equal(hiddenView.tasks.length, 125); assert.equal(hiddenView.taskCatalog, undefined); assert(hiddenView.tasks.filter(task => task.sharedSlot.startsWith('P')).every(task => task.title == null));
+    assert.equal((await app.inject({ method: 'POST', url: `/api/games/${presetId}/commands`, headers: { authorization: `Bearer ${presetHost}`, 'idempotency-key': crypto.randomUUID() }, payload: { type: 'transition', status: 'RUNNING' } })).statusCode, 200);
+    const created = await app.inject({ method: 'POST', url: '/api/games', headers: { authorization: `Bearer ${gameAdminKey}` }, payload: { preset: 'custom' } }); assert.equal(created.statusCode, 201);
     const game = created.json(); assert.equal(game.credentials, undefined);
     const login = async (username, role) => {
       const response = await app.inject({ method: 'POST', url: `/api/games/${game.id}/login`, payload: { username, password, role } }); assert.equal(response.statusCode, 200, response.body); return response.json().token;

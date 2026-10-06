@@ -6,6 +6,7 @@ import { initialAuditQueue, initialCards, initialMessages, teams as initialTeams
 import { initialSharedBingoTasks } from './data/sharedBingoTasks';
 import { enqueueAuditItem } from "./domain/auditQueue";
 import { reviewAudit, type ReviewState } from './domain/regionProgress';
+import { canRevealTask } from './domain/photoFind';
 import { PlayerApp } from "./player/PlayerApp";
 import { StaffApp } from "./staff/StaffApp";
 import type { GameCard, GameMessage, Task, ToastState, UserMode } from "./types";
@@ -29,7 +30,7 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
     }));
   });
   const [reviewState, setReviewState] = useState<ReviewState>({
-    auditQueue: initialAuditQueue, teams: initialTeams, regionAuditLog: [],
+    auditQueue: initialAuditQueue, teams: initialTeams, regionAuditLog: [], photoFinds: {},
     regionProgress: {
       'team-1': {currentRegionId:'stage-b',version:2}, 'team-2': {currentRegionId:'stage-b',version:2},
       'team-3': {currentRegionId:'stage-a',version:1}, 'team-4': {currentRegionId:'stage-c',version:3},
@@ -52,6 +53,8 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
   const handleSubmitTask = (taskId: string, filename: string) => {
     const task = tasks.find((item) => item.id === taskId);
     if (!task || !playerTeam) return;
+    const regionId = regionProgress[playerTeam.id]?.currentRegionId ?? null;
+    if (!canRevealTask(task.sharedSlot, regionId, reviewState.photoFinds?.[playerTeam.id]?.[regionId ?? ''])) return;
 
     setTasks((current) => current.map((item) => (
       item.id === taskId
@@ -81,6 +84,18 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
       ...current
     ]);
     notify({ tone: "warning", title: "仅本地演示", body: "已记录文件名，图片未上传到服务器，工作人员设备不会收到。" });
+  };
+
+  const handleSubmitPhotoFind = (slot: string, filename: string) => {
+    if (!playerTeam) return;
+    const regionId = regionProgress[playerTeam.id]?.currentRegionId;
+    if (!regionId || reviewState.photoFinds?.[playerTeam.id]?.[regionId]?.[slot]?.status === 'approved' || reviewState.photoFinds?.[playerTeam.id]?.[regionId]?.[slot]?.status === 'pending') return;
+    const id = `P-${crypto.randomUUID()}`;
+    setReviewState(current => ({ ...current,
+      photoFinds: { ...current.photoFinds, [playerTeam.id]: { ...current.photoFinds?.[playerTeam.id], [regionId]: { ...current.photoFinds?.[playerTeam.id]?.[regionId], [slot]: { status: 'pending', submissionId: id } } } },
+      auditQueue: enqueueAuditItem(current.auditQueue, { id, kind: '格位图寻', teamId: playerTeam.id, team: playerTeam.name, photoSlot: slot, photoRegionId: regionId, task: `图寻 #${Number(slot.slice(1))}`, submittedAt: `${nowLabel()}:00`, waitingSeconds: 0, imageTone: 'tone-cyan', checklist: ['复刻参考图所在地点', '复刻参考图拍摄角度'] })
+    }));
+    notify({ tone: 'warning', title: '图寻已加入本地演示队列', body: `${filename} 仅记录文件名，不会上传到工作人员设备；须审核通过后才解锁任务。` });
   };
 
   const handleUseCard = (cardId: string, target: string) => {
@@ -118,13 +133,14 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
     }
     setReviewState(current => reviewAudit(current, command));
     const entrance = item.kind === '图寻题';
+    const photo = item.kind === '格位图寻';
     setMessages((current) => [
       {
         id: `M-${Date.now()}`,
         type: "review",
-        title: result === "approve" ? (entrance ? "区域入口审核通过" : "任务审核通过") : "任务需要重新提交",
+        title: result === "approve" ? (photo ? '图寻审核通过' : entrance ? "区域入口审核通过" : "任务审核通过") : "需要重新提交",
         body: result === "approve"
-          ? (entrance ? `${item.team}的区域入口已通过，本队 19 张图寻图片统一更新；任务和分数保留。` : `“${item.task}”已审核通过，结果已写入账本。`)
+          ? (photo ? `${item.task}已通过，五张 Bingo 的对应任务已解锁。` : entrance ? `${item.team}的区域入口已通过，本队 19 张图寻图片统一更新；任务和分数保留。` : `“${item.task}”已审核通过，结果已写入账本。`)
           : `“${item.task}”已打回；任务完成状态不变，请重新上传照片。`,
         time: nowLabel(),
         unread: true
@@ -164,6 +180,8 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
           messages={messages}
           onLogout={onLogout}
           onSubmitTask={handleSubmitTask}
+          photoFinds={reviewState.photoFinds?.[playerTeam.id]?.[regionProgress[playerTeam.id]?.currentRegionId ?? ''] ?? {}}
+          onSubmitPhotoFind={handleSubmitPhotoFind}
           onUseCard={handleUseCard}
           onReadMessage={(messageId) => setMessages((current) => current.map((message) => (
             message.id === messageId ? { ...message, unread: false } : message

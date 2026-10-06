@@ -26,6 +26,8 @@ import { getPhotoClue, photoRegions } from '../data/photoClues';
 import { BingoDeck } from './BingoDeck';
 import { groupBingoTasks } from '../data/bingoBoards';
 import { teams } from '../data/mock';
+import { canRevealTask, difficultyLevel, type PhotoFindProgress } from '../domain/photoFind';
+import { PhotoFindNotice, TaskChallenge } from './TaskChallenge';
 
 interface PlayerAppProps {
   team: TeamStatus;
@@ -36,6 +38,8 @@ interface PlayerAppProps {
   messages: GameMessage[];
   onLogout: () => void;
   onSubmitTask: (taskId: string, filename: string) => void;
+  photoFinds?: PhotoFindProgress;
+  onSubmitPhotoFind?: (slot: string, filename: string) => void;
   onUseCard: (cardId: string, target: string) => void;
   onReadMessage: (messageId: string) => void;
 }
@@ -54,6 +58,8 @@ export function PlayerApp({
   messages,
   onLogout,
   onSubmitTask,
+  photoFinds = {},
+  onSubmitPhotoFind,
   onUseCard,
   onReadMessage
 }: PlayerAppProps) {
@@ -70,6 +76,8 @@ export function PlayerApp({
   const currentTasks = useMemo(() => tasks, [tasks]);
   const bingoBoards = useMemo(() => groupBingoTasks(currentTasks, team.id, team.name), [currentTasks, team.id, team.name]);
   const selectedPhoto = selectedTask ? getPhotoClue(regionId, selectedTask.sharedSlot ?? '') : null;
+  const taskRevealed = !!selectedTask && canRevealTask(selectedTask.sharedSlot, approvedRegionId, photoFinds);
+  const selectedPhotoStatus = photoFinds[selectedTask?.sharedSlot ?? '']?.status ?? 'locked';
   const motionPaused = !pageVisible || Boolean(selectedTask || selectedCard || showMessages || playingCard);
   const unreadCount = messages.filter((message) => message.unread).length;
 
@@ -77,7 +85,7 @@ export function PlayerApp({
   useEffect(() => {
     setSelectedTask(null);
     setSelectedFile(null);
-  }, [approvedRegionId]);
+  }, [approvedRegionId, team.id]);
 
   useEffect(() => {
     const updateVisibility = () => setPageVisible(document.visibilityState !== 'hidden');
@@ -144,8 +152,10 @@ export function PlayerApp({
               boards={bingoBoards.map(board => ({ ...board, items: board.tasks.map(task => ({
                 id: task.id,
                 slot: task.sharedSlot,
+                difficulty: difficultyLevel(task.scoreDifficulty ?? task.difficulty),
+                photoStatus: task.sharedSlot?.startsWith('P') ? photoFinds[task.sharedSlot]?.status ?? 'locked' : undefined,
                 points: task.configured === false || task.pointsConfigured === false ? undefined : task.points,
-                state: task.configured === false ? 'unconfigured' : task.state,
+                state: task.configured === false ? 'unconfigured' : canRevealTask(task.sharedSlot, approvedRegionId, photoFinds) ? task.state : 'locked',
                 pendingCount: task.pendingCount
               })) }))}
               onSelect={id => setSelectedTask(currentTasks.find(task => task.id === id) ?? null)}
@@ -230,30 +240,29 @@ export function PlayerApp({
       </main>
 
       {selectedTask ? (
-        <Modal title={selectedTask.title} description={selectedTask.brief} onClose={closeTask}>
+        <Modal title={taskRevealed ? selectedTask.title : `图寻 #${Number(selectedTask.sharedSlot?.slice(1))}`} onClose={closeTask}>
+          {taskRevealed ? <TaskChallenge brief={selectedTask.brief} difficulty={difficultyLevel(selectedTask.scoreDifficulty ?? selectedTask.difficulty)} points={selectedTask.pointsConfigured === false ? undefined : selectedTask.points} bonus={selectedTask.bonus} failurePenalty={selectedTask.failurePenalty} /> : null}
           {selectedPhoto ? <figure className="task-photo" key={selectedPhoto.detail}>
             <a className="task-photo__image" href={selectedPhoto.original} target="_blank" rel="noopener noreferrer" aria-label={`查看图寻图片 #${selectedPhoto.number} 原尺寸清晰图`}><img src={selectedPhoto.detail} alt={`${region?.name} 图寻图片 #${selectedPhoto.number}`} decoding="async" /></a>
             <figcaption><span>图寻 #{selectedPhoto.number}</span><a href={selectedPhoto.original} target="_blank" rel="noopener noreferrer">打开原尺寸图 ↗</a></figcaption>
           </figure> : <div className="task-direct-note">{selectedTask.sharedSlot?.startsWith('P') ? <><LockKeyhole size={22} aria-hidden="true" /><span>区域入口尚未审核通过，图寻图片未开放。</span></> : <><Zap size={22} aria-hidden="true" /><span>此格无需图寻，按任务要求完成即可。</span></>}</div>}
-          <div className="detail-meta">
-            {selectedTask.configured === false ? <StatusChip tone="neutral">待配置</StatusChip> : <><StatusChip tone={selectedTask.difficulty === "挑战" ? "danger" : selectedTask.difficulty === "标准" ? "warning" : "success"}>{selectedTask.difficulty}</StatusChip><strong>{selectedTask.pointsConfigured === false ? '分值待配置 · 本地演示' : `${selectedTask.points} 分`}</strong></>}
-            {selectedTask.pendingCount ? <span>{selectedTask.pendingCount} 队审核中</span> : null}
-          </div>
-          {!region && selectedTask.sharedSlot?.startsWith('P') ? <div className="locked-panel"><LockKeyhole size={24} aria-hidden="true" /><div><strong>等待入口审核</strong><p>工作人员通过后才开放本区域图片。</p></div></div> : selectedTask.configured === false ? <div className="locked-panel"><Camera size={24} aria-hidden="true" /><div><strong>任务待配置</strong><p>图片已接入，正式任务与分值尚未填写，暂不开放提交。</p></div></div> : selectedTask.state === "locked" ? (
+          {!taskRevealed && region ? <PhotoFindNotice status={selectedPhotoStatus} /> : null}
+          {taskRevealed && selectedTask.pendingCount ? <p role="status">已有 {selectedTask.pendingCount} 队提交任务审核。</p> : null}
+          {!region && selectedTask.sharedSlot?.startsWith('P') ? <div className="locked-panel"><LockKeyhole size={24} aria-hidden="true" /><div><strong>等待入口审核</strong><p>工作人员通过后才开放本区域图片。</p></div></div> : selectedTask.configured === false ? <div className="locked-panel"><Camera size={24} aria-hidden="true" /><div><strong>任务待配置</strong><p>图片已接入，正式任务与分值尚未填写，暂不开放提交。</p></div></div> : selectedTask.state === "locked" && taskRevealed ? (
             <div className="locked-panel"><LockKeyhole size={24} aria-hidden="true" /><div><strong>还没解锁</strong><p>先通过本区图寻题。</p></div></div>
-          ) : (
+          ) : selectedPhotoStatus === 'pending' && !taskRevealed ? null : (
             <>
-              <div className="review-hints"><h3>拍摄要求</h3><ul><li>只交一张现场原图</li><li>提交时间决定审核顺序</li><li>已有队伍排队也可以继续交</li></ul></div>
               <label className={`upload-dropzone ${previewUrl ? "has-preview" : ""}`}>
                 {previewUrl ? <img src={previewUrl} alt="待上传照片预览" /> : <ImagePlus size={28} aria-hidden="true" />}
-                <span>{selectedFile ? selectedFile.name : "拍照或选一张原图"}</span>
+                <span>{selectedFile ? selectedFile.name : taskRevealed ? "选择任务完成证据" : "拍摄或选择图寻复刻照"}</span>
                 <input type="file" accept="image/*" capture="environment" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} />
               </label>
-              <button className="button button--primary button--full" disabled={!selectedFile} onClick={() => {
+              <button className="button button--primary button--full" disabled={!selectedFile || (!taskRevealed && !onSubmitPhotoFind)} onClick={() => {
                 if (!selectedFile) return;
-                onSubmitTask(selectedTask.id, selectedFile.name);
+                if (taskRevealed) onSubmitTask(selectedTask.id, selectedFile.name);
+                else if (selectedTask.sharedSlot) onSubmitPhotoFind?.(selectedTask.sharedSlot, selectedFile.name);
                 closeTask();
-              }}><Upload size={18} aria-hidden="true" />提交审核</button>
+              }}><Upload size={18} aria-hidden="true" />{taskRevealed ? '提交任务审核' : '提交图寻审核'}</button>
             </>
           )}
         </Modal>

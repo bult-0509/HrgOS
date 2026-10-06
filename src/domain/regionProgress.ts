@@ -1,5 +1,7 @@
 import { photoRegions } from '../data/photoClues';
 import type { AuditItem, TeamStatus, UserMode } from '../types';
+import type { PhotoFinds } from './photoFind';
+import { isPhotoSlot } from './photoFind';
 
 export type PhotoRegionId = (typeof photoRegions)[number]['id'];
 export interface TeamRegionProgress {
@@ -20,6 +22,7 @@ export interface ReviewState {
   auditQueue: AuditItem[];
   regionProgress: Record<string, TeamRegionProgress>;
   regionAuditLog: RegionAuditLog[];
+  photoFinds?: PhotoFinds;
 }
 export interface ReviewCommand {
   itemId: string;
@@ -35,6 +38,11 @@ export function reviewAudit(state: ReviewState, command: ReviewCommand): ReviewS
   const item = state.auditQueue[0];
   // FIFO、重复处理以及不存在的提交不能改变状态。
   if (!item || item.id !== command.itemId) return state;
+  if (item.kind === '格位图寻') {
+    if (!item.teamId || !item.photoRegionId || !isPhotoSlot(item.photoSlot) || !photoRegions.some(r => r.id === item.photoRegionId) || !state.teams.some(t => t.id === item.teamId && t.status !== 'finished')) return state;
+    const all = state.photoFinds ?? {}, team = all[item.teamId] ?? {}, region = team[item.photoRegionId] ?? {};
+    return { ...state, auditQueue: state.auditQueue.slice(1), photoFinds: { ...all, [item.teamId]: { ...team, [item.photoRegionId]: { ...region, [item.photoSlot!]: { status: command.result === 'approve' ? 'approved' : 'rejected', submissionId: item.id, operatorId: command.operatorId, reviewedAt: command.reviewedAt } } } } };
+  }
   if (item.kind !== '图寻题') return { ...state, auditQueue: state.auditQueue.slice(1) };
 
   const team = state.teams.find(t => t.id === item.teamId);

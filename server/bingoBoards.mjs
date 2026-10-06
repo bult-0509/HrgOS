@@ -1,3 +1,11 @@
+import { taskScoreRules } from './scoring.mjs';
+
+const slots = ['D01','P02','P19','P05','P11','P04','P17','D02','P12','P01','P13','P14','D03','P16','D04','P18','D05','P06','P08','P10','P07','P03','P15','D06','P09'];
+export function bingoSlotForTask(state, task) {
+  if (task.sharedSlot) return task.sharedSlot;
+  const board = state.config.tasks.filter(item => item.boardId === task.boardId);
+  return slots[board.indexOf(task)];
+}
 export const bingoBoardDefinitions = [
   { id: 'team-1', name: 'Phigros队' }, { id: 'team-2', name: 'Arcaea队' },
   { id: 'team-3', name: '范式起源队' }, { id: 'team-4', name: 'maimai队' }, { id: 'team-5', name: '全能队' }
@@ -16,5 +24,12 @@ export function normalizeBingoTasks(tasks, requireRule) {
     // 指定格位时必须完整定义25格，否则无法保证19+6及图像对应关系。
     requireRule(!explicitSlots.length || explicitSlots.length === 25 && new Set(explicitSlots.map(task => task.sharedSlot)).size === 25, 'BINGO_SLOT_CONFIG_INVALID', 400);
   }
-  return tasks.map(({ id, title, brief, points, boardId, sharedSlot }) => ({ id, title, brief, points, ...(fiveBoards ? { boardId } : {}), ...(sharedSlot ? { sharedSlot } : {}), image: '/hrg-mark.svg' }));
+  const normalized = tasks.map(task => {
+    const { id, title, brief, points, boardId, sharedSlot } = task;
+    return { id, title, brief, points, ...taskScoreRules(task, requireRule), ...(fiveBoards ? { boardId } : {}), ...(sharedSlot ? { sharedSlot } : {}), image: '/hrg-mark.svg' };
+  });
+  return fiveBoards ? bingoBoardDefinitions.flatMap(board => {
+    const items = normalized.filter(task => task.boardId === board.id);
+    return items.every(task => task.sharedSlot) ? items.sort((a, b) => slots.indexOf(a.sharedSlot) - slots.indexOf(b.sharedSlot)) : items;
+  }) : normalized;
 }

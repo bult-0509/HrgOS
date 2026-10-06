@@ -1,0 +1,14 @@
+.task-challenge,.photo-find-notice{--task-level:#67e6a2;--task-tint:#67e6a21f}
+[data-difficulty="中"]{--task-level:#ffd65e;--task-tint:#ffd65e20}
+[data-difficulty="难"]{--task-level:#ff727d;--task-tint:#ff727d20}
+[data-difficulty="极难"]{--task-level:#f288da;--task-tint:#f288da24}
+.task-challenge{padding:20px;margin:0 0 20px;border:1px solid var(--task-level);border-left-width:5px;background:linear-gradient(125deg,var(--task-tint),#141e2de8);border-radius:10px;color:#f7fafc}
+.task-challenge__meta{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--task-level);font-weight:800}
+.task-challenge__meta>span{padding:4px 10px;background:var(--task-tint);border-radius:4px;font-size:14px}
+.task-challenge__meta strong{font-size:32px;line-height:1;font-variant-numeric:tabular-nums}.task-challenge__meta small{margin-left:5px;font-size:14px}
+.task-challenge .task-challenge__brief{margin:18px 0 0;font-size:20px;line-height:1.75;font-weight:650;white-space:pre-line;overflow-wrap:anywhere;color:#f7fafc}
+.task-challenge .task-challenge__extra{margin:16px 0 0;color:#d7e2f2;line-height:1.6;font-size:15px}
+.photo-find-notice{display:flex;gap:12px;align-items:flex-start;margin:18px 0;padding:16px;border:1px solid #8ca8cc66;border-radius:10px;background:#18283be8;color:#eaf3ff}.photo-find-notice>svg{flex:none;color:#aacdf5}.photo-find-notice strong{font-size:18px}.photo-find-notice p{margin:6px 0 0;line-height:1.6;font-size:15px;color:#ceddf1}
+.photo-find-notice[data-status="pending"]{border-color:#ffd65e80}.photo-find-notice[data-status="pending"]>svg{color:#ffd65e}.photo-find-notice[data-status="rejected"]{border-color:#ff727d80}
+.task-reference{margin:0 0 18px;border:1px solid #9bb2cf40;border-radius:8px;padding:10px 12px;color:#cbdaf0}.task-reference summary{min-height:32px;cursor:pointer}.task-reference .task-photo,.task-reference .task-photo-detail{margin:12px 0 0}
+@media(max-width:700px){.task-challenge{padding:16px}.task-challenge .task-challenge__brief{font-size:18px}.task-challenge__meta strong{font-size:28px}}

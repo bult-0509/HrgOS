@@ -1,6 +1,10 @@
 import { validateTestApiBase } from '../testing/ruleSuite';
 
 const messages: Record<string, string> = {
+  PHOTO_FIND_REQUIRED: '请先复刻这张参考图的地点与拍摄角度，图寻审核通过后才能提交对应任务。',
+  PHOTO_SLOT_INVALID: '请选择本区域有效的图寻图片编号。', PHOTO_ALREADY_APPROVED: '这张图寻已通过，对应任务已解锁。', PHOTO_REVIEW_PENDING: '这张图寻正在审核，请等待工作人员处理。',
+  FINISH_REGION_REQUIRED: '请先通过龙翔桥入口审核，再确认完赛。', FINISH_TASKS_PENDING: '本队仍有任务待审核，请先处理后再确认完赛。', FINISH_REWARDS_INVALID: '完赛奖励须为五个递减的非负整数。',
+  TASK_SCORE_RULES_INVALID: '任务额外奖励或失败扣分配置无效。', TASK_ATTEMPTS_INVALID: '请核对队伍、任务、真实失败次数与审核依据。', TASK_PERFORMANCE_INVALID: '核验成绩须为非负整数，并填写核验依据。',
   CARD_UNAVAILABLE: '这张卡已被使用、正在确认或已停用。', FORBIDDEN: '当前账号没有执行此操作的权限。',
   HISTORIC_LOCATION_UNAVAILABLE: '缺少十分钟前的有效定位，请由队长提前开启定位。', FRESH_LOCATION_REQUIRED: '冻结开始前，目标队长需要上报一次最新定位。',
   DURATION_NOT_FINISHED: '规定持续时间尚未结束，暂不能确认成功。', TIMELY_COMPLETION_REQUIRED: '请核实是否在截止前完成，并勾选现场确认或查看期间提交的证据。',

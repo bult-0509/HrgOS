@@ -3,6 +3,7 @@ dist
 .pnpm-store/
 .codex-backups/
 artifacts/
+outputs/task-integration-20261006/HRG125*.xlsx.inspect.ndjson
 .env
 .env.local
 .env.*

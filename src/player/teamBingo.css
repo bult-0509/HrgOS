@@ -30,6 +30,12 @@
 .team-bingo .bingo-cell--awarded .bingo-cell__state{background:var(--tb-accent)}
 .team-bingo .tb-cell .photo-preview{z-index:-1}
 .team-bingo .bingo-cell__direct-art{opacity:.45;color:var(--tb-accent)}
+.tb-difficulty{display:inline-block;border-radius:3px;padding:2px 4px;font-size:10px;line-height:1.1;font-weight:700;color:#143324;background:#a5e0b5}
+.tb-difficulty[data-level="中"]{background:#ffe082;color:#4b3900}
+.tb-difficulty[data-level="难"]{background:#f4a5a5;color:#5a1010}
+.tb-difficulty[data-level="极难"]{background:#d81b60;color:white}
+.team-bingo .tb-cell .tb-difficulty{position:absolute;bottom:6px;left:5px;z-index:1}
+.team-bingo button.tb-cell[data-difficulty="极难"]{border-color:#ff5294;background:#911745}
 .tb-footer{display:flex;align-items:center;justify-content:center;gap:7px;min-height:24px;color:#b7bfd0;font-size:14px}
 .tb-footer b{color:#f6f3ed;font-size:16px}.tb-footer i{height:14px;width:1px;background:#b7bfd030;margin:0 10px}
 [data-bingo-theme=phigros] .tb-board-surface,[data-bingo-theme=paradigm] .tb-board-surface{border-radius:0}

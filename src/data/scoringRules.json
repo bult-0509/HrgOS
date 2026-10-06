@@ -1,0 +1,1148 @@
+{
+  "version": "hrg-20261007-v1",
+  "boardBudget": 4000,
+  "extremePoints": 400,
+  "taskLimit": 5,
+  "finishRewards": [
+    800,
+    600,
+    400,
+    250,
+    100
+  ],
+  "boardRewards": [],
+  "tasks": [
+    {
+      "id": "PHI22",
+      "boardId": "team-1",
+      "sharedSlot": "D01",
+      "title": "一指全红",
+      "brief": "单指 AP 一张任意难度谱面",
+      "points": 80,
+      "difficulty": "易"
+    },
+    {
+      "id": "PHI18",
+      "boardId": "team-1",
+      "sharedSlot": "P02",
+      "title": "闭眼也能d0EZ",
+      "brief": "d0EZ盲打 ＞ 700000",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "PHI11",
+      "boardId": "team-1",
+      "sharedSlot": "P19",
+      "title": "魔王曲速写",
+      "brief": "请在附近找到纸笔并画出一张魔王曲的曲绘，发给工作人员 认出即可通关",
+      "points": 130,
+      "difficulty": "易"
+    },
+    {
+      "id": "PHI17",
+      "boardId": "team-1",
+      "sharedSlot": "P05",
+      "title": "Rr精准控分",
+      "brief": "游玩Rr 任意难度 控分920000",
+      "points": 230,
+      "difficulty": "难"
+    },
+    {
+      "id": "PHI03",
+      "boardId": "team-1",
+      "sharedSlot": "P11",
+      "title": "一手包办动画",
+      "brief": "单手ap better graphic animation的in难度",
+      "points": 200,
+      "difficulty": "难"
+    },
+    {
+      "id": "PHI15",
+      "boardId": "team-1",
+      "sharedSlot": "P04",
+      "title": "冷手热谱",
+      "brief": "手泡在冰水里一分钟，然后随机选一首曲子（难度大于16），ap其in谱面（冰水请自己找）",
+      "points": 240,
+      "difficulty": "难"
+    },
+    {
+      "id": "PHI19",
+      "boardId": "team-1",
+      "sharedSlot": "P17",
+      "title": "左右护法",
+      "brief": "双人合作（一人左手一人右手）任意AT15及以上 ＞ 880000",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "PHI24",
+      "boardId": "team-1",
+      "sharedSlot": "D02",
+      "title": "零零五说的道理",
+      "brief": "把自己的昵称改为零零五即可，但之后的所有任务开始前需要先溜一遍说的道理",
+      "points": 80,
+      "difficulty": "易"
+    },
+    {
+      "id": "PHI10",
+      "boardId": "team-1",
+      "sharedSlot": "P12",
+      "title": "人形平板支架",
+      "brief": "请把平板放在你队友的后背上ap一张谱面（谱面难度必须大于16）",
+      "points": 160,
+      "difficulty": "中"
+    },
+    {
+      "id": "PHI13",
+      "boardId": "team-1",
+      "sharedSlot": "P01",
+      "title": "全连低分王",
+      "brief": "fc一首曲子 但总分不能上900000（难度大于15）",
+      "points": 170,
+      "difficulty": "中"
+    },
+    {
+      "id": "PHI06",
+      "boardId": "team-1",
+      "sharedSlot": "P13",
+      "title": "IN级查户口",
+      "brief": "本挑战为问答类型，请将本界面截图发给工作人员：\n问：截至4.0.1版本，phigros共收录327首曲子，其中IN难度为13的有几首？IN难度为14的有几首？IN难度为15的有几首？（五分钟内将答案发送给工作人员，仅有一次回答机会）",
+      "points": 140,
+      "difficulty": "中"
+    },
+    {
+      "id": "PHI14",
+      "boardId": "team-1",
+      "sharedSlot": "P14",
+      "title": "白V断连大师",
+      "brief": "打一首曲子 白V的同时max combo不能超100（难度大于13）",
+      "points": 110,
+      "difficulty": "易"
+    },
+    {
+      "id": "PHI09",
+      "boardId": "team-1",
+      "sharedSlot": "D03",
+      "title": "蒙眼代打？！",
+      "brief": "请让一个人戴上眼罩 另一个人抓住它的手指ap一张谱面（必须只有戴眼罩的手指能接触屏幕且谱面难度必须大于15）",
+      "points": 400,
+      "difficulty": "极难"
+    },
+    {
+      "id": "PHI01",
+      "boardId": "team-1",
+      "sharedSlot": "P16",
+      "title": "板子别动！",
+      "brief": "不转板ap inferior的IN难度",
+      "points": 90,
+      "difficulty": "易"
+    },
+    {
+      "id": "PHI25",
+      "boardId": "team-1",
+      "sharedSlot": "D04",
+      "title": "HD一手拿捏",
+      "brief": "单手游玩一张 HD 谱面并 AP",
+      "points": 80,
+      "difficulty": "易"
+    },
+    {
+      "id": "PHI08",
+      "boardId": "team-1",
+      "sharedSlot": "P18",
+      "title": "二次元扫书行动",
+      "brief": "请在附近的店铺找到《轻音少女》全套漫画《孤独摇滚》设定集和《Bang Dream！It‘s Mygo 雨中祈晴》实体书",
+      "points": 160,
+      "difficulty": "易"
+    },
+    {
+      "id": "PHI21",
+      "boardId": "team-1",
+      "sharedSlot": "D05",
+      "title": "Random3开盲盒",
+      "brief": "课题模式通过随机选择到 Random3 难度并游玩（不严格要求顺序），若成绩在 2990000 以上额外 +50",
+      "points": 230,
+      "difficulty": "难",
+      "bonus": {
+        "points": 50,
+        "threshold": 2990000,
+        "comparison": "gte"
+      }
+    },
+    {
+      "id": "PHI02",
+      "boardId": "team-1",
+      "sharedSlot": "P06",
+      "title": "红键外包",
+      "brief": "请和你和你的同伴合作ap BRAIN HACKER的IN难度\n（要求红键只能由你的同伴用一根手指接）",
+      "points": 110,
+      "difficulty": "易"
+    },
+    {
+      "id": "PHI12",
+      "boardId": "team-1",
+      "sharedSlot": "P08",
+      "title": "谷子认亲大会",
+      "brief": "请ap一首歌曲 并且将结算界面与一个谷子进行合影（要求曲绘人物与谷子上的人物一致）",
+      "points": 140,
+      "difficulty": "易"
+    },
+    {
+      "id": "PHI04",
+      "boardId": "team-1",
+      "sharedSlot": "P10",
+      "title": "课题三连红",
+      "brief": "课题模式随机选三张in，要求三首全ap（需上交随机抽取视频和结算图）",
+      "points": 150,
+      "difficulty": "易"
+    },
+    {
+      "id": "PHI07",
+      "boardId": "team-1",
+      "sharedSlot": "P07",
+      "title": "唱打",
+      "brief": "唱打：请选择一首带vocal的曲子并且将你的平板静音，在一旁打开音乐软件的哼唱识曲功能，一边打这首曲子的IN一边唱，要求ap且歌曲识别成功（亲测可行）",
+      "points": 180,
+      "difficulty": "中"
+    },
+    {
+      "id": "PHI20",
+      "boardId": "team-1",
+      "sharedSlot": "P03",
+      "title": "一指宇宙",
+      "brief": "About the Universe 单指 ＞ 860000",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "PHI05",
+      "boardId": "team-1",
+      "sharedSlot": "P15",
+      "title": "曲库统计员",
+      "brief": "本挑战为问答类型，请将本界面截图发给工作人员：\n问：截至4.0.1版本，phigros共收录327首曲子，其中单曲精选集占比多少，主线章节占比多少，支线章节占比多少，联动及其他精选集占比多少（省略至小数点后一位，五分钟内将答案发送给工作人员，仅有一次回答机会）",
+      "points": 100,
+      "difficulty": "易"
+    },
+    {
+      "id": "PHI23",
+      "boardId": "team-1",
+      "sharedSlot": "D06",
+      "title": "986000复刻现场",
+      "brief": "在课题模式下，游玩 d0EZ，并完全复刻 986000 场面（分数相同，爆点相同）",
+      "points": 170,
+      "difficulty": "中"
+    },
+    {
+      "id": "PHI16",
+      "boardId": "team-1",
+      "sharedSlot": "P09",
+      "title": "credits不是片尾？",
+      "brief": "游玩credits HD ＞ 980000",
+      "points": 200,
+      "difficulty": "难"
+    },
+    {
+      "id": "ARC16",
+      "boardId": "team-2",
+      "sharedSlot": "D01",
+      "title": "质数强迫症",
+      "brief": "残片数量末尾两位为质数",
+      "points": 70,
+      "difficulty": "易"
+    },
+    {
+      "id": "ARC02",
+      "boardId": "team-2",
+      "sharedSlot": "P02",
+      "title": "只能看不能摸",
+      "brief": "游玩任意等级的 ftr 曲目，要求达到全部红蛇，有音弧判定上得分则重开（本身就能做到全红）",
+      "points": 230,
+      "difficulty": "难"
+    },
+    {
+      "id": "ARC03",
+      "boardId": "team-2",
+      "sharedSlot": "P19",
+      "title": "光暗双生",
+      "brief": "可以对换光暗侧的歌曲使用光对立前后打两次，保持在同一评级",
+      "points": 120,
+      "difficulty": "易"
+    },
+    {
+      "id": "ARC10",
+      "boardId": "team-2",
+      "sharedSlot": "P05",
+      "title": "快慢都是你",
+      "brief": "以 max 速度和 min 速度游玩同一首 ftr 及以上曲子，结算成绩达到 19200000 及以上",
+      "points": 220,
+      "difficulty": "难"
+    },
+    {
+      "id": "ARC18",
+      "boardId": "team-2",
+      "sharedSlot": "P11",
+      "title": "天翻地覆色号",
+      "brief": "倒打色号，5000000 以上",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "ARC24",
+      "boardId": "team-2",
+      "sharedSlot": "P04",
+      "title": "猫猫喘口气",
+      "brief": "暂停 10 次使用猫对立完成 Libertas BYD clear",
+      "points": 220,
+      "difficulty": "难"
+    },
+    {
+      "id": "ARC11",
+      "boardId": "team-2",
+      "sharedSlot": "P17",
+      "title": "曲师连连看",
+      "brief": "从进入主界面开始计时，30s 内通过选取曲包的方式找到 4 首同个曲师的作品（每失败一次 -50）",
+      "points": 140,
+      "difficulty": "中",
+      "failurePenalty": 50
+    },
+    {
+      "id": "ARC25",
+      "boardId": "team-2",
+      "sharedSlot": "D02",
+      "title": "三连批发商",
+      "brief": "给 bult_0509 一键三连十次",
+      "points": 80,
+      "difficulty": "易"
+    },
+    {
+      "id": "ARC08",
+      "boardId": "team-2",
+      "sharedSlot": "P12",
+      "title": "这歌我会唱",
+      "brief": "唱打 xterfusion",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "ARC05",
+      "boardId": "team-2",
+      "sharedSlot": "P01",
+      "title": "困难角色带我飞",
+      "brief": "使用任意困难角色通关任意一首 11/11 /12",
+      "points": 200,
+      "difficulty": "难"
+    },
+    {
+      "id": "ARC17",
+      "boardId": "team-2",
+      "sharedSlot": "P13",
+      "title": "分数复读机",
+      "brief": "任意谱面结算分数的 7–8 位数中有至少 4 个数字相同（不能是 0）",
+      "points": 130,
+      "difficulty": "易"
+    },
+    {
+      "id": "ARC19",
+      "boardId": "team-2",
+      "sharedSlot": "P14",
+      "title": "强碱体验卡",
+      "brief": "被姛炷强碱一次",
+      "points": 100,
+      "difficulty": "易"
+    },
+    {
+      "id": "ARC12",
+      "boardId": "team-2",
+      "sharedSlot": "D03",
+      "title": "拆开也要千万",
+      "brief": "选取任意一首 ftr9 及以上，连续三次游玩，分别只接蛇/地键/天键，总结算成绩达到 10000000 及以上",
+      "points": 400,
+      "difficulty": "极难"
+    },
+    {
+      "id": "ARC14",
+      "boardId": "team-2",
+      "sharedSlot": "P16",
+      "title": "早到也不行",
+      "brief": "游玩任意 ftr，不能出现 early 判定",
+      "points": 100,
+      "difficulty": "易"
+    },
+    {
+      "id": "ARC15",
+      "boardId": "team-2",
+      "sharedSlot": "D04",
+      "title": "井水不犯河水",
+      "brief": "一只手接天键和蛇，不同于那只手的另一只手接地键，track complete 任意曲目",
+      "points": 80,
+      "difficulty": "易"
+    },
+    {
+      "id": "ARC09",
+      "boardId": "team-2",
+      "sharedSlot": "P18",
+      "title": "小p收集癖",
+      "brief": "以超过 100 小 p 的成绩 pm 任意一首歌",
+      "points": 220,
+      "difficulty": "难"
+    },
+    {
+      "id": "ARC23",
+      "boardId": "team-2",
+      "sharedSlot": "D05",
+      "title": "卸载冷静一下",
+      "brief": "卸载掉游玩设备上的任意一款音游",
+      "points": 160,
+      "difficulty": "难"
+    },
+    {
+      "id": "ARC13",
+      "boardId": "team-2",
+      "sharedSlot": "P06",
+      "title": "迟到是不可能的",
+      "brief": "游玩任意 ftr，不能出现 late 判定",
+      "points": 100,
+      "difficulty": "易"
+    },
+    {
+      "id": "ARC22",
+      "boardId": "team-2",
+      "sharedSlot": "P08",
+      "title": "曲绘照进现实",
+      "brief": "拍摄出多次元 & testify & Oshama Scramble 曲绘姿势",
+      "points": 190,
+      "difficulty": "中"
+    },
+    {
+      "id": "ARC07",
+      "boardId": "team-2",
+      "sharedSlot": "P10",
+      "title": "GUY，你干嘛",
+      "brief": "连续游玩首字母为 g、u、y 的曲目（要求 ftr 及以上），总成绩达到 29550000 以上",
+      "points": 140,
+      "difficulty": "易"
+    },
+    {
+      "id": "ARC04",
+      "boardId": "team-2",
+      "sharedSlot": "P07",
+      "title": "来自隔壁的你",
+      "brief": "在选曲列表随歌，直到随到联动曲目为止，并说出联动曲目在本家的主难度定数（每失败一次积分 -50）",
+      "points": 150,
+      "difficulty": "中",
+      "failurePenalty": 50
+    },
+    {
+      "id": "ARC01",
+      "boardId": "team-2",
+      "sharedSlot": "P03",
+      "title": "镜中追分",
+      "brief": "镜像游玩任意一首 10 级及以上的歌，超过自己本地的记录\n-100000",
+      "points": 170,
+      "difficulty": "中"
+    },
+    {
+      "id": "ARC20",
+      "boardId": "team-2",
+      "sharedSlot": "P15",
+      "title": "d0ez出来挨打",
+      "brief": "随机选歌直到抽选到 d0ez",
+      "points": 110,
+      "difficulty": "易"
+    },
+    {
+      "id": "ARC21",
+      "boardId": "team-2",
+      "sharedSlot": "D06",
+      "title": "风暴二人转",
+      "brief": "风暴 byd 双人合作，左边的人用右手，右边的人用左手，达到 7000000",
+      "points": 140,
+      "difficulty": "中"
+    },
+    {
+      "id": "ARC06",
+      "boardId": "team-2",
+      "sharedSlot": "P09",
+      "title": "67，不能再多了",
+      "brief": "在任意难度任意曲目打出 far/lost 为 6/7 的结算成绩（允许使用拉格兰）",
+      "points": 230,
+      "difficulty": "难"
+    },
+    {
+      "id": "PAR06",
+      "boardId": "team-3",
+      "sharedSlot": "D01",
+      "title": "bpm=rt达标打卡",
+      "brief": "bpm=rt ctc，990000",
+      "points": 70,
+      "difficulty": "易"
+    },
+    {
+      "id": "PAR18",
+      "boardId": "team-3",
+      "sharedSlot": "P02",
+      "title": "人形街机",
+      "brief": "由任一队员手持平板或手机站立，设备所在平面和地面垂直，另一队员与之面对面站立，游玩指定曲目 [Re:Layered massive]，要求分数达到 1006000",
+      "points": 160,
+      "difficulty": "中"
+    },
+    {
+      "id": "PAR15",
+      "boardId": "team-3",
+      "sharedSlot": "P19",
+      "title": "曲名何意味",
+      "brief": "【special】曲名何意味：找到曲名除去字母、汉字、日语假名后含有至少两个圈的曲目，并游玩 massive 难度，分数达到 1000000",
+      "points": 120,
+      "difficulty": "易"
+    },
+    {
+      "id": "PAR17",
+      "boardId": "team-3",
+      "sharedSlot": "P05",
+      "title": "命运交给路人",
+      "brief": "随机找一个路人点击一次范式全曲随机键，得到一首随机曲目，游玩该曲目的最高难度且分数须达到 1005000，若否，重复上一步骤（即重新寻找路人），直至达到分数要求",
+      "points": 230,
+      "difficulty": "难"
+    },
+    {
+      "id": "PAR20",
+      "boardId": "team-3",
+      "sharedSlot": "P11",
+      "title": "双小拇指冲百万",
+      "brief": "用双手小拇指游玩一首难度为 15 及以上曲目，分数达到 1000000",
+      "points": 220,
+      "difficulty": "难"
+    },
+    {
+      "id": "PAR24",
+      "boardId": "team-3",
+      "sharedSlot": "P04",
+      "title": "控速挑战",
+      "brief": "控速挑战：指定曲目 Aleph0 massive 难度，从以下两项中任选一项完成：\nA. 结算时 received 总数达到 200 或以上，lost 总数不超过 20。\nB. 将谱面流速调至 1.6，音符出现距离调至 1，在此设置下游玩该谱面，要求分数达到 1000000。",
+      "points": 230,
+      "difficulty": "难"
+    },
+    {
+      "id": "PAR13",
+      "boardId": "team-3",
+      "sharedSlot": "P17",
+      "title": "曲绘找找茬之我爱para",
+      "brief": "【special】曲绘找找茬之我爱 para：请在全游收录曲目中找到 3 首满足“曲绘中有 para 且她手中（或手旁）有花束”的曲目，并游玩其中任意一首，分数达到 1005000",
+      "points": 170,
+      "difficulty": "中"
+    },
+    {
+      "id": "PAR07",
+      "boardId": "team-3",
+      "sharedSlot": "D02",
+      "title": "席替（换座位）",
+      "brief": "席替（换座位），massive 难度全连",
+      "points": 90,
+      "difficulty": "易"
+    },
+    {
+      "id": "PAR02",
+      "boardId": "team-3",
+      "sharedSlot": "P12",
+      "title": "冬日方块少丢点",
+      "brief": "winter cube ctc ■，双人或三人协力，lost 总数不超过 30",
+      "points": 160,
+      "difficulty": "中"
+    },
+    {
+      "id": "PAR03",
+      "boardId": "team-3",
+      "sharedSlot": "P01",
+      "title": "时间到了，满分！",
+      "brief": "time's up ctc 止，1000000",
+      "points": 140,
+      "difficulty": "中"
+    },
+    {
+      "id": "PAR01",
+      "boardId": "team-3",
+      "sharedSlot": "P13",
+      "title": "范式也能Dynamix",
+      "brief": "名无宣教师 ctc 拟，双人或三人协力，分数达到 990000（模拟 dynamix 站位）",
+      "points": 110,
+      "difficulty": "易"
+    },
+    {
+      "id": "PAR04",
+      "boardId": "team-3",
+      "sharedSlot": "P14",
+      "title": "elegante双向奔赴",
+      "brief": "elegante ctc 双，990000",
+      "points": 90,
+      "difficulty": "易"
+    },
+    {
+      "id": "PAR23",
+      "boardId": "team-3",
+      "sharedSlot": "D03",
+      "title": "数据乱流",
+      "brief": "【special】数据乱流：将音频延迟参数 -200，画面延迟参数 +100，完成一首 16 级或以上曲目，要求分数达到 1000000",
+      "points": 400,
+      "difficulty": "极难"
+    },
+    {
+      "id": "PAR16",
+      "boardId": "team-3",
+      "sharedSlot": "P16",
+      "title": "谁笑谁重开",
+      "brief": "在商场过道罚站军姿 3min，保持面部严肃，眼神坚毅，不许笑（），若没绷住则重新开始计时",
+      "points": 140,
+      "difficulty": "中"
+    },
+    {
+      "id": "PAR21",
+      "boardId": "team-3",
+      "sharedSlot": "D04",
+      "title": "零号车单手司机",
+      "brief": "单手游玩零号车辆 detected 谱面，并取得全连击，则该任务完成",
+      "points": 80,
+      "difficulty": "易"
+    },
+    {
+      "id": "PAR12",
+      "boardId": "team-3",
+      "sharedSlot": "P18",
+      "title": "曲师猜猜乐",
+      "brief": "【special】曲师猜猜乐：请找出范式起源游戏内收录曲目数量大于 6 首的一个曲师，并选择其任意一首曲目 massive 难度进行游玩，分数达到 1009000",
+      "points": 160,
+      "difficulty": "中"
+    },
+    {
+      "id": "PAR25",
+      "boardId": "team-3",
+      "sharedSlot": "D05",
+      "title": "大麻烦！！！",
+      "brief": "大麻烦！！！：游玩 Giganto Machina reboot 难度，分数达到 1007500",
+      "points": 210,
+      "difficulty": "难"
+    },
+    {
+      "id": "PAR09",
+      "boardId": "team-3",
+      "sharedSlot": "P06",
+      "title": "ternion三道关",
+      "brief": "ternion massive 难度，达成以下要求：开异象；三押段全连；尾杀降速段 AD",
+      "points": 130,
+      "difficulty": "易"
+    },
+    {
+      "id": "PAR14",
+      "boardId": "team-3",
+      "sharedSlot": "P08",
+      "title": "纵连打信者",
+      "brief": "【special】纵连打信者：选择一首有长纵连的曲目游玩其 massive 难度，分数达到 1000000",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "PAR11",
+      "boardId": "team-3",
+      "sharedSlot": "P10",
+      "title": "入侵二选一",
+      "brief": "nox silva/labyrinthox 两者任选其一，invaded 谱面分数达到 1009000",
+      "points": 140,
+      "difficulty": "中"
+    },
+    {
+      "id": "PAR10",
+      "boardId": "team-3",
+      "sharedSlot": "P07",
+      "title": "慢速带师",
+      "brief": "慢速带师：cybernetic vampire massive 难度，在满足以下要求的条件下分数达到 980000：谱面流速 0.4；音符出现距离 3",
+      "points": 220,
+      "difficulty": "难"
+    },
+    {
+      "id": "PAR08",
+      "boardId": "team-3",
+      "sharedSlot": "P03",
+      "title": "重返新手村",
+      "brief": "以下任务任选其一：\nA. 新手教程，数据紊乱段全连。\nB. 新手教程，教程段 AD 通过（特殊要求：将蓝色 tap 视为白色 tap 击打，即手指需要离开屏幕，不可在屏幕上滑动）。",
+      "points": 160,
+      "difficulty": "中"
+    },
+    {
+      "id": "PAR05",
+      "boardId": "team-3",
+      "sharedSlot": "P15",
+      "title": "inner norm侧面出击",
+      "brief": "inner norm ctc 侧，990000",
+      "points": 90,
+      "difficulty": "易"
+    },
+    {
+      "id": "PAR22",
+      "boardId": "team-3",
+      "sharedSlot": "D06",
+      "title": "十六级全收",
+      "brief": "AD 一首 16 级难度歌曲",
+      "points": 120,
+      "difficulty": "中"
+    },
+    {
+      "id": "PAR19",
+      "boardId": "team-3",
+      "sharedSlot": "P09",
+      "title": "倒转脑回路",
+      "brief": "转板倒打指定曲目 rebooted mind massive 难度，分数达到 1000000",
+      "points": 210,
+      "difficulty": "难"
+    },
+    {
+      "id": "MAI01",
+      "boardId": "team-4",
+      "sharedSlot": "D01",
+      "title": "？！初见！？",
+      "brief": "？！初见！？：游玩一首自己从未打过的12-14级曲目，且结算分数达到 S（97%以上） 即可。",
+      "points": 80,
+      "difficulty": "易"
+    },
+    {
+      "id": "MAI04",
+      "boardId": "team-4",
+      "sharedSlot": "P02",
+      "title": "键盘大师？",
+      "brief": "“键盘大师？”：游玩一首13+级曲目，全程不能打到任何一个 SLIDE（星星） 音符（全部slide必须都为miss判定），其他按键不能有miss判定。",
+      "points": 220,
+      "difficulty": "难"
+    },
+    {
+      "id": "MAI10",
+      "boardId": "team-4",
+      "sharedSlot": "P19",
+      "title": "路人夺权",
+      "brief": "“路人夺权”：请一位路人（或朋友）在选曲界面帮你随机点选一首12级曲目，你必须使用最高难度（master/re:master）打完，分数达到 A。",
+      "points": 120,
+      "difficulty": "易"
+    },
+    {
+      "id": "MAI15",
+      "boardId": "team-4",
+      "sharedSlot": "P05",
+      "title": "极极？！",
+      "brief": "“极极？！”：选一首 13级及以上的曲目，要求达成 FULL COMBO（全连），但最后的分数必须低于95% 以下。",
+      "points": 160,
+      "difficulty": "中"
+    },
+    {
+      "id": "MAI03",
+      "boardId": "team-4",
+      "sharedSlot": "P11",
+      "title": "长条绝缘体",
+      "brief": "“长条绝缘体”：游玩任意一首13-14级曲目，要求所有的hold都不能有critical perfect（大p）判定，评分在80%以上即可。",
+      "points": 210,
+      "difficulty": "难"
+    },
+    {
+      "id": "MAI23",
+      "boardId": "team-4",
+      "sharedSlot": "P04",
+      "title": "乌冬面上分套餐",
+      "brief": "连续游玩星界ちゃんと可不ちゃんのおつかい合騒曲的exp与mas难度 总达成率在195.0000及以上 同时游玩过程中旁边的玩家喂食游玩者一整份乌冬面（最好是咖喱乌冬面）",
+      "points": 240,
+      "difficulty": "难"
+    },
+    {
+      "id": "MAI19",
+      "boardId": "team-4",
+      "sharedSlot": "P17",
+      "title": "彩虹提前报到",
+      "brief": "游玩sd相信彩虹 将星星提前出现的数值调为极大值 结算成绩在97.0000及以上",
+      "points": 140,
+      "difficulty": "中"
+    },
+    {
+      "id": "MAI09",
+      "boardId": "team-4",
+      "sharedSlot": "D02",
+      "title": "单手挑战",
+      "brief": "“单手挑战”：选择一首11-12级曲目，尝试只用单手完成（另一只手背在身后），分数达到80%即可。",
+      "points": 70,
+      "difficulty": "易"
+    },
+    {
+      "id": "MAI12",
+      "boardId": "team-4",
+      "sharedSlot": "P12",
+      "title": "首字母捉迷藏",
+      "brief": "“首字母捉迷藏”：在选曲界面，按字母排序，选出你cn拼音首字母开头的曲目（比如你叫句号，就找J或H开头），游玩其最高难度，分数达到97%即可。",
+      "points": 140,
+      "difficulty": "中"
+    },
+    {
+      "id": "MAI14",
+      "boardId": "team-4",
+      "sharedSlot": "P01",
+      "title": "全程解说",
+      "brief": "“全程解说”：游玩一首13级曲目时，全程大声解说自己在打什么（比如“现在来了个双押，哎我接住了，接下来是滑星……”），10秒内未说话或未描述铺面内容判定失败。",
+      "points": 200,
+      "difficulty": "难"
+    },
+    {
+      "id": "MAI21",
+      "boardId": "team-4",
+      "sharedSlot": "P13",
+      "title": "GDP精准扶贫",
+      "brief": "任意选择一座城市的年总量gdp 取第1位和第4位组成两位数 游玩garakuta doll play的mas难度 达成率与两位数差值在5以内则完成任务",
+      "points": 120,
+      "difficulty": "易"
+    },
+    {
+      "id": "MAI06",
+      "boardId": "team-4",
+      "sharedSlot": "P14",
+      "title": "福瑞？！",
+      "brief": "“福瑞？！”：在游戏曲库中，找出一首曲绘（封面）里带有动物的曲目，游玩其 MAS 难度，分数达到 97%。",
+      "points": 90,
+      "difficulty": "易"
+    },
+    {
+      "id": "MAI16",
+      "boardId": "team-4",
+      "sharedSlot": "D03",
+      "title": "小拇指也要上分",
+      "brief": "使用左右手的小拇指游玩任意一首难度不低于13.4的歌曲 达成率在100.0000及以上",
+      "points": 400,
+      "difficulty": "极难"
+    },
+    {
+      "id": "MAI13",
+      "boardId": "team-4",
+      "sharedSlot": "P16",
+      "title": "交叉手挑战",
+      "brief": "“交叉手挑战”：游玩一首 12 级曲目，全程强行左手打右边、右手打左边（交叉打)分数达到 A 即可。",
+      "points": 130,
+      "difficulty": "中"
+    },
+    {
+      "id": "MAI24",
+      "boardId": "team-4",
+      "sharedSlot": "D04",
+      "title": "废物三项",
+      "brief": "废物三项——连续游玩潘 系 xx的basic难度 总错数≤7",
+      "points": 110,
+      "difficulty": "易"
+    },
+    {
+      "id": "MAI17",
+      "boardId": "team-4",
+      "sharedSlot": "P18",
+      "title": "深海闭嘴挑战",
+      "brief": "嘴里含一口水连续游玩sd深海少女dx深海少女 总分在200.5000及以上",
+      "points": 160,
+      "difficulty": "中"
+    },
+    {
+      "id": "MAI22",
+      "boardId": "team-4",
+      "sharedSlot": "D05",
+      "title": "致敬传奇心态王",
+      "brief": "（致敬传奇心态王）游玩DATAERR0R的basic难度 使用0.5倍流速与0.5倍谱面游玩（例如：玩家常用设置为8速 则使用4速 0.5倍谱面游玩）最终成绩需为ap-2且为2good",
+      "points": 200,
+      "difficulty": "难"
+    },
+    {
+      "id": "MAI05",
+      "boardId": "team-4",
+      "sharedSlot": "P06",
+      "title": "每日325",
+      "brief": "“每日325”：1pc内，按顺序游玩曲目名字或难度各含有3/2/5的3首歌曲，总分达到297%。",
+      "points": 130,
+      "difficulty": "易"
+    },
+    {
+      "id": "MAI08",
+      "boardId": "team-4",
+      "sharedSlot": "P08",
+      "title": "长跑冠军",
+      "brief": "“长跑冠军”：游玩13+级曲目《白南十字》，在中间星星的休息段围绕着场地（？）跑一圈，评分95%以上即完成",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "MAI11",
+      "boardId": "team-4",
+      "sharedSlot": "P10",
+      "title": "高速狂飙",
+      "brief": "“高速狂飙”：将谱面流速调为 10.0游玩一首13级曲目，分数达到90%即可。",
+      "points": 140,
+      "difficulty": "中"
+    },
+    {
+      "id": "MAI07",
+      "boardId": "team-4",
+      "sharedSlot": "P07",
+      "title": "张雪峰",
+      "brief": "“张雪峰”：从打开一瓶500ml的雪碧开始计时，15分钟内，喝完并游玩雪代（milk plus代)的任意一首14-14+曲目，评分达到95%以上，大声喊出“你打不过我你信不信”即完成。",
+      "points": 180,
+      "difficulty": "中"
+    },
+    {
+      "id": "MAI18",
+      "boardId": "team-4",
+      "sharedSlot": "P03",
+      "title": "星星单手承包",
+      "brief": "游玩幸隐同时 限制一只手不能划星星 达成率在94.0000及以上",
+      "points": 140,
+      "difficulty": "中"
+    },
+    {
+      "id": "MAI25",
+      "boardId": "team-4",
+      "sharedSlot": "P15",
+      "title": "这不是我们屁屁肉的歌吗",
+      "brief": "这不是我们屁屁肉的歌吗——游玩任意一首两个游戏皆收录的曲目 舞萌则玩家达成率/101*100后≥phi侧玩家达成率即成功",
+      "points": 130,
+      "difficulty": "易"
+    },
+    {
+      "id": "MAI20",
+      "boardId": "team-4",
+      "sharedSlot": "D06",
+      "title": "边打边建王国",
+      "brief": "一人连续游玩Last Kingdom和Latent Kingdom的mas难度 游玩结束之前 另一位玩家画一张王国的画 并交由另一位路人打分 满分十分 记为分数一 两首歌的达成率总和除以20记为分数二 分数总分达到17分则完成任务",
+      "points": 200,
+      "difficulty": "难"
+    },
+    {
+      "id": "MAI02",
+      "boardId": "team-4",
+      "sharedSlot": "P09",
+      "title": "不许爆G",
+      "brief": "“不许爆G”：游玩一首13级曲目，全程不能出现 GOOD 判定（即只有 PERFECT 和 GREAT，miss），评分在s及以上，如果手滑打出 GOOD 则重开。",
+      "points": 140,
+      "difficulty": "中"
+    },
+    {
+      "id": "ALL06",
+      "boardId": "team-5",
+      "sharedSlot": "D01",
+      "title": "柠檬水补给站",
+      "brief": "买一杯冰鲜柠檬水并喝完",
+      "points": 70,
+      "difficulty": "易"
+    },
+    {
+      "id": "ALL07",
+      "boardId": "team-5",
+      "sharedSlot": "P02",
+      "title": "慢到怀疑人生",
+      "brief": "将流速调到最低，并随机选一首曲子，ap其最高难度谱面",
+      "points": 190,
+      "difficulty": "难"
+    },
+    {
+      "id": "ALL11",
+      "boardId": "team-5",
+      "sharedSlot": "P19",
+      "title": "曲师点名册",
+      "brief": "在一分钟内说出20个音游曲师（id必须为英文）并拍成视频（要求这些曲师首字母不同）",
+      "points": 110,
+      "difficulty": "中"
+    },
+    {
+      "id": "ALL18",
+      "boardId": "team-5",
+      "sharedSlot": "P05",
+      "title": "冰手挑战",
+      "brief": "手泡在冰水里一分钟，然后随机选一首曲子，ap其最高难度谱面（冰水请自己找）",
+      "points": 200,
+      "difficulty": "难"
+    },
+    {
+      "id": "ALL23",
+      "boardId": "team-5",
+      "sharedSlot": "P11",
+      "title": "曲绘团建",
+      "brief": "还原任意含三人及以上的曲绘姿势",
+      "points": 200,
+      "difficulty": "难"
+    },
+    {
+      "id": "ALL15",
+      "boardId": "team-5",
+      "sharedSlot": "P04",
+      "title": "旁白正在加载",
+      "brief": "随机选一首曲子，ap其最高难度谱面，同时你的队友在打歌过程中朗读一遍《别样的碰碰车大战》或《止战之殇》",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "ALL04",
+      "boardId": "team-5",
+      "sharedSlot": "P17",
+      "title": "走着也能AP",
+      "brief": "随机选一首曲子，ap其最高难度谱面，要求打歌过程中向前走至少100米",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "ALL17",
+      "boardId": "team-5",
+      "sharedSlot": "D02",
+      "title": "事已至此，先吃饭吧",
+      "brief": "事已至此，先吃饭吧（吃顿饭）",
+      "points": 110,
+      "difficulty": "易"
+    },
+    {
+      "id": "ALL02",
+      "boardId": "team-5",
+      "sharedSlot": "P12",
+      "title": "双手打结",
+      "brief": "随机选一首曲子，ap其最高难度谱面，要求打歌过程中双手交叉",
+      "points": 190,
+      "difficulty": "难"
+    },
+    {
+      "id": "ALL12",
+      "boardId": "team-5",
+      "sharedSlot": "P01",
+      "title": "跨游爬楼梯",
+      "brief": "随机一张谱面作为初始定数（保留整数部分），ap这张谱面后将这个数字+1然后换游戏ap符合这个定数的谱面，再将这个数字+1然后换游戏ap符合这个定数的谱面，三张谱面都ap即可挑战成功",
+      "points": 180,
+      "difficulty": "中"
+    },
+    {
+      "id": "ALL20",
+      "boardId": "team-5",
+      "sharedSlot": "P13",
+      "title": "这口水不能吐",
+      "brief": "随机选一首曲子，ap其最高难度谱面，同时在打歌前要含一口水中间不能吐出来",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "ALL10",
+      "boardId": "team-5",
+      "sharedSlot": "P14",
+      "title": "音游字母表",
+      "brief": "在一分钟内说出a-z开头的音游曲并拍成视频",
+      "points": 110,
+      "difficulty": "中"
+    },
+    {
+      "id": "ALL21",
+      "boardId": "team-5",
+      "sharedSlot": "D03",
+      "title": "镜像倒打二人转",
+      "brief": "镜像倒打双人合作一首最高难度的谱面，并拿到这个游戏倒数第二评级以上（不包含）的成绩",
+      "points": 400,
+      "difficulty": "极难"
+    },
+    {
+      "id": "ALL03",
+      "boardId": "team-5",
+      "sharedSlot": "P16",
+      "title": "边打边画",
+      "brief": "选一首曲子并在附近找到纸笔，ap其最高难度谱面的同时，打歌过程中画出这首歌的曲绘 ，发给工作人员，辨认出则挑战成功（如果辨认失败需换张谱面）",
+      "points": 120,
+      "difficulty": "易"
+    },
+    {
+      "id": "ALL24",
+      "boardId": "team-5",
+      "sharedSlot": "D04",
+      "title": "325在哪里",
+      "brief": "在任意一款音游中找到“325”字样",
+      "points": 110,
+      "difficulty": "中"
+    },
+    {
+      "id": "ALL08",
+      "boardId": "team-5",
+      "sharedSlot": "P18",
+      "title": "反面教材",
+      "brief": "随机选一首曲子，ap其最高难度谱面，要求打歌过程中板子屏幕必须朝下",
+      "points": 200,
+      "difficulty": "难"
+    },
+    {
+      "id": "ALL22",
+      "boardId": "team-5",
+      "sharedSlot": "D05",
+      "title": "音游减法",
+      "brief": "删除游玩设备上的任意一款音游",
+      "points": 130,
+      "difficulty": "难"
+    },
+    {
+      "id": "ALL01",
+      "boardId": "team-5",
+      "sharedSlot": "P06",
+      "title": "空中音游",
+      "brief": "随机选一首曲子，ap其最高难度谱面，要求打歌过程中双脚必须离地至少三十公分",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "ALL19",
+      "boardId": "team-5",
+      "sharedSlot": "P08",
+      "title": "你打歌我平板",
+      "brief": "随机选一首曲子，ap其最高难度谱面，同时你的队友要在打歌过程中完成等时长的平板支撑",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "ALL09",
+      "boardId": "team-5",
+      "sharedSlot": "P10",
+      "title": "地板音游",
+      "brief": "随机选一首曲子，ap其最高难度谱面，要求打歌过程中板子必须\n平放在地面上",
+      "points": 150,
+      "difficulty": "中"
+    },
+    {
+      "id": "ALL13",
+      "boardId": "team-5",
+      "sharedSlot": "P07",
+      "title": "b键加班中",
+      "brief": "随机选一首曲子，ap其最高难度谱面，同时你的队友在打歌过程中用手机输入法打1300个字母b",
+      "points": 200,
+      "difficulty": "难"
+    },
+    {
+      "id": "ALL14",
+      "boardId": "team-5",
+      "sharedSlot": "P03",
+      "title": "你打歌我跳一跳",
+      "brief": "随机选一首曲子，ap其最高难度谱面，同时你的队友在打歌过程中打开微信跳一跳打到300分",
+      "points": 200,
+      "difficulty": "难"
+    },
+    {
+      "id": "ALL05",
+      "boardId": "team-5",
+      "sharedSlot": "P15",
+      "title": "初音巡回打卡",
+      "brief": "ap曲绘有初音未来的最高难度谱面，在附近找到初音未来并用结算图合影，连续完成三次且每次打的必须是不同的音游",
+      "points": 130,
+      "difficulty": "易"
+    },
+    {
+      "id": "ALL25",
+      "boardId": "team-5",
+      "sharedSlot": "D06",
+      "title": "名场面返场",
+      "brief": "还原任意除 Phigros 音游外的名场面",
+      "points": 100,
+      "difficulty": "易"
+    },
+    {
+      "id": "ALL16",
+      "boardId": "team-5",
+      "sharedSlot": "P09",
+      "title": "板子三周转",
+      "brief": "随机选一首曲子，ap其最高难度谱面，要求打歌过程中板子旋转1080度",
+      "points": 150,
+      "difficulty": "中"
+    }
+  ]
+}

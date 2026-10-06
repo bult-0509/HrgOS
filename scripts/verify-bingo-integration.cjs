@@ -14,6 +14,7 @@ const assert = require('node:assert/strict');
   fixture.teams = ['Phigros队', 'Arcaea队', '范式起源队', 'maimai队', '全能队'].map((name, i) => ({ id: `team-${i + 1}`, name, regionId: 'stage-b', regionVersion: 2, finishedAt: null }));
   fixture.status = 'RUNNING'; fixture.runningSince = fixture.now;
   fixture.config.tasks = fixture.teams.flatMap(board => Array.from({ length: 25 }, (_, i) => ({ id: `${board.id}-T${i + 1}`, boardId: board.id, title: `${board.name}真实测试任务${i + 1}`, brief: '测试要求', points: 5 })));
+  fixture.photoFinds = { 'team-1': { 'stage-b': { P01: { status: 'approved' } } } };
   let liveTeam = 'team-1', rejectSubmission = false;
   const commands = [], errors = [], results = [];
   const themes = ['phigros', 'arcaea', 'paradigm', 'maimai', 'community'];

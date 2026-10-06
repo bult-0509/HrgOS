@@ -1,6 +1,7 @@
 import { loginAccounts } from '../src/data/loginAccounts.ts';
 import { readSession, secureEqual, signSession, verifyPassword } from './auth.mjs';
 import { allowedScore, executeCommand, exportBackup, seedState, stateView, visibleMedia, visibleMessages } from './rules.mjs';
+import { officialScoring } from './scoring.mjs';
 
 export async function registerLiveRoutes(app, store, adminKey, accountRoster = loginAccounts) {
   if (adminKey && adminKey.length < 32) throw new Error('GAME_ADMIN_KEY 至少需要 32 个字符');
@@ -25,7 +26,12 @@ export async function registerLiveRoutes(app, store, adminKey, accountRoster = l
     state.teams = [...leaders].map((id, index) => ({ id, name: names[index] ?? id, regionId: null, regionVersion: 0, finishedAt: null }));
     // 正式赛局不能沿用自动化测试的任务和事件分值。
     state.config.tasks = []; state.config.boardRewards = []; state.config.eventTemplates = [];
-    return reply.code(201).send({ id: await store.create(state, true), mode: 'live', configured: false });
+    if (request.body?.preset !== 'custom') {
+      state.config.tasks = structuredClone(officialScoring.tasks).map(task => ({ ...task, image: '/hrg-mark.svg' }));
+      state.config.finishRewards = [...officialScoring.finishRewards]; state.config.taskLimit = officialScoring.taskLimit;
+      state.config.scoringVersion = officialScoring.version; state.configured = true;
+    }
+    return reply.code(201).send({ id: await store.create(state, true), mode: 'live', configured: state.configured, scoringVersion: state.config.scoringVersion });
   });
   const attempts = new Map();
   app.post('/api/games/:runId/login', async request => {

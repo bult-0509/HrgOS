@@ -1,5 +1,5 @@
 .bingo-deck{position:relative;min-width:0;isolation:isolate}
-.bingo-deck__viewport{display:grid;grid-template-columns:minmax(0,1fr);perspective:1300px;position:relative;isolation:isolate;overflow:clip;touch-action:pan-y}
+.bingo-deck__viewport{display:grid;grid-template-columns:minmax(0,1fr);perspective:1300px;position:relative;isolation:isolate;overflow:clip;contain:paint;touch-action:pan-y}
 .bingo-deck__card{grid-area:1/1;width:100%;max-width:760px;justify-self:center;min-width:0;position:relative;transform-origin:50% 50%;transition:transform 560ms cubic-bezier(.2,.7,.16,1),opacity 320ms ease;backface-visibility:hidden}
 .bingo-deck__card[data-offset="0"]{z-index:5;transform:none;opacity:1}
 .bingo-deck__card[data-offset="-1"]{z-index:3;transform:translateX(-63%) scale(.76) rotateY(12deg);opacity:.6}

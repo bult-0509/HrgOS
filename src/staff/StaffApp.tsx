@@ -30,7 +30,7 @@ import {
 import { SectionHeading, StatusChip } from "../components/ui";
 import type { AuditItem, StaffTab, TeamStatus } from "../types";
 import type { RegionAuditLog } from '../domain/regionProgress';
-import { photoRegions } from '../data/photoClues';
+import { getPhotoClue, photoRegions } from '../data/photoClues';
 
 interface StaffAppProps {
   auditQueue: AuditItem[];
@@ -239,7 +239,7 @@ function ReviewWorkspace({ auditQueue, onReview }: { auditQueue: AuditItem[]; on
       <section className="review-detail staff-panel">
         <div className="review-detail__header">
           <div><p className="eyebrow">CURRENT REVIEW · {current.id}</p><h2>{current.task}</h2><p>{current.team} · 提交于 {current.submittedAt}</p></div>
-          <StatusChip tone={current.kind === "图寻题" ? "info" : "danger"}>{current.kind}</StatusChip>
+          <StatusChip tone={current.kind !== "普通任务" ? "info" : "danger"}>{current.kind}</StatusChip>
         </div>
         <div className={`review-photo ${current.imageTone}`}>
           <span>原图审核预览</span>
@@ -255,6 +255,7 @@ function ReviewWorkspace({ auditQueue, onReview }: { auditQueue: AuditItem[]; on
           <button className="button button--approve" onClick={() => onReview(current.id, "approve")}><Check size={19} aria-hidden="true" />审核通过</button>
         </div>
         {current.kind === '图寻题' ? <p className="panel-intro">这是区域入口审核。通过后只推进{current.team}至{photoRegions.find(r => r.id === current.targetRegionId)?.name ?? '（目标缺失，不能推进）'}，本队 19 张图片统一替换；不重置任务、分数或其他队进度。打回时保持当前区域。</p> : null}
+        {current.kind === '格位图寻' ? <figure className="photo-review-reference"><img src={getPhotoClue(current.photoRegionId ?? '', current.photoSlot ?? '')?.detail} alt="图寻参考图" /><figcaption>核对参考图所在地点与拍摄角度。通过后只解锁本队五个对应任务，不换区、不加任务分。本页只记录演示文件名，不代表收到了真实照片。</figcaption></figure> : null}
       </section>
     </div>
   );

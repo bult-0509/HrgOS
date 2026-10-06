@@ -40,5 +40,6 @@ test('Phigros身份可以做其他四张棋盘任务，区域和积分属于提�
   await assert.rejects(executeCommand(state, player, { type: 'submit', kind: 'task', regionId: 'stage-c', taskId: 'team-2-T2', media }, crypto.randomUUID()), /REGION_NOT_UNLOCKED/);
   assert.equal(view.tasks.filter(task => task.boardId === 'team-2').length, 25);
   const hidden = stateView({ ...state, teams: state.teams.map(team => ({ ...team, regionId: null })) }, player);
-  assert(hidden.tasks.every(task => task.title == null && task.brief == null));
+  assert(hidden.tasks.filter(task => task.sharedSlot.startsWith('P')).every(task => task.title == null && task.brief == null));
+  assert.equal(hidden.tasks.filter(task => task.sharedSlot.startsWith('D') && task.title).length, 30);
 });

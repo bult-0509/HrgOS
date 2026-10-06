@@ -73,7 +73,7 @@ export function BingoDeck({ boards, actorTeamId, approvedRegionId, paused = fals
                 {theme ? <img className="tb-frame" src={`${root}frame-${theme.id}.svg`} alt="" width="1000" height="1000" /> : null}
                 <div className="tb-core"><div className="bingo-peek__head">{String(index + 1).padStart(2, '0')} / {String(boards.length).padStart(2, '0')}</div><div className="bingo-peek__grid">{board.items.map((item, n) => {
                   const slot = photoSlotFor(item, n), photo = getPhotoClue(approvedRegionId ?? '', slot ?? '');
-                  return <span key={item.id} className="bingo-peek__cell">{photo ? <img src={photo.preview} alt="" width="480" height="480" loading="lazy" /> : null}<b>{slot}</b></span>;
+                  return <span key={item.id} className="bingo-peek__cell" data-difficulty={item.difficulty}>{photo ? <img src={photo.preview} alt="" width="480" height="480" loading="lazy" /> : null}<b>{slot}</b></span>;
                 })}</div><div className="tb-footer">19 / 06</div></div>
               </div>
             </div>

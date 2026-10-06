@@ -23,6 +23,9 @@ export interface Task {
   /** 任务所属的主题棋盘，不是允许提交的队伍。 */
   boardId?: string;
   pointsConfigured?: boolean;
+  scoreDifficulty?: '易' | '中' | '难' | '极难';
+  bonus?: { points: number; threshold: number; comparison: string };
+  failurePenalty?: number;
   regionId: string;
   title: string;
   brief: string;
@@ -70,7 +73,7 @@ export interface TeamStatus {
 
 export interface AuditItem {
   id: string;
-  kind: "图寻题" | "普通任务";
+  kind: "图寻题" | "普通任务" | "格位图寻";
   team: string;
   task: string;
   submittedAt: string;
@@ -80,6 +83,8 @@ export interface AuditItem {
   /** 区域入口审核必须带明确目标，不得从任务文案猜测。 */
   teamId?: string;
   targetRegionId?: string;
+  photoSlot?: string;
+  photoRegionId?: string;
 }
 
 export interface ToastState {

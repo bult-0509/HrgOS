@@ -1,6 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { normalizeBingoTasks } from './bingoBoards.mjs';
+import { bingoSlotForTask } from './bingoBoards.mjs';
+import { approvePhotoFind, photoFindsEnabled, photoFindStatus, taskIsRevealed, validPhotoSlot } from './photoFinds.mjs';
+import { officialScoring, validateFinishRewards, finishAward } from './scoring.mjs';
 import { abilityCommand, abilityView, abilityTick, abilityScoreAccess, abilityLocation, abilityResultView, taskPermissions, abilityTaskReviewed, validateReserveTasks } from './abilityCards.mjs';
 
 export class RuleError extends Error {
@@ -32,7 +35,7 @@ function credit(state, teamId, points, category, reference, actor, reason) {
   if (state.ledger.some(entry => entry.id === id)) return;
   state.ledger.push({ id, teamId, points, category, reference, actor: actor.id, reason, at: state.now });
 }
-const score = (state, teamId) => state.ledger.filter(entry => entry.teamId === teamId).reduce((sum, entry) => sum + entry.points, 0);
+const score = (state, teamId) => Math.round(state.ledger.filter(entry => entry.teamId === teamId).reduce((sum, entry) => sum + entry.points, 0) * 1e6) / 1e6;
 function ranking(state) {
   const entries = state.teams.map(team => ({ teamId: team.id, name: team.name, score: score(state, team.id), taskScore: state.ledger.filter(entry => entry.teamId === team.id && entry.category === 'TASK').reduce((sum, entry) => sum + entry.points, 0), finishedAt: team.finishedAt }))
     .sort((a, b) => b.score - a.score || b.taskScore - a.taskScore || (a.finishedAt ?? Infinity) - (b.finishedAt ?? Infinity));
@@ -57,14 +60,24 @@ export function stateView(state, actor) {
   tick(state);
   const lastSnapshot = state.snapshots.at(-1);
   const snapshot = lastSnapshot && elapsed(state) - lastSnapshot.elapsed < state.config.rankingVisibleMs ? lastSnapshot : null;
-  const common = { ...abilityView(state, actor), taskPermissions: taskPermissions(state, actor.teamId), liveRanking: actor.manage || abilityScoreAccess(state, actor.teamId) ? ranking(state) : null, status: state.status, elapsedMs: elapsed(state), serverTime: state.now, configVersion: state.config.version, rankingSnapshot: snapshot, lastEventId: state.sequence };
+  const taskCatalog = actor.role === 'staff' && (actor.manage || actor.review) ? { taskCatalog: state.config.tasks, boardRewards: state.config.boardRewards } : {};
+  const common = { ...taskCatalog, ...abilityView(state, actor), taskPermissions: taskPermissions(state, actor.teamId), liveRanking: actor.manage || abilityScoreAccess(state, actor.teamId) ? ranking(state) : null, status: state.status, elapsedMs: elapsed(state), serverTime: state.now, configVersion: state.config.version, scoringVersion: state.config.scoringVersion, taskLimit: state.config.taskLimit, finishRewards: state.config.finishRewards, rankingSnapshot: snapshot, lastEventId: state.sequence };
   if (actor.role === 'staff') {
     if (!actor.manage && !actor.review) return { ...common, locations: actor.locations ? state.teams.map(team => locationView(state, team)) : [] };
     const metadata = JSON.stringify({ ...state, media: Object.fromEntries(Object.entries(state.media).map(([id, media]) => [id, { ...media, base64: undefined, thumbnail: undefined }])) });
     return { ...common, teams: state.teams.map(team => ({ ...team, score: score(state, team.id) })), allFinished: state.teams.every(team => team.finishedAt != null), queue: state.submissions.filter(item => item.status === 'QUEUED'), submissions: state.submissions, awards: state.awards, ledger: state.ledger, events: state.events, cardRequests: state.cardRequests, effects: state.effects, snapshots: state.snapshots, audit: state.audit, locations: actor.locations ? state.teams.map(team => locationView(state, team)) : undefined, locationHistory: actor.locations ? state.locationHistory : undefined, storage: { metadataBytes: Buffer.byteLength(metadata), warning: Buffer.byteLength(metadata) >= state.config.storageWarnBytes }, finishBlockers: { queued: state.submissions.filter(item => item.status === 'QUEUED').length, pendingCards: state.cardRequests.filter(item => item.status === 'PENDING').length } };
   }
   const team = teamFor(state, actor);
-  const tasks = state.config.tasks.map(task => ({ id: task.id, boardId: task.boardId, image: task.image, sharedSlot: task.sharedSlot ?? task.id, awarded: !!state.awards[task.id], pendingCount: state.submissions.filter(item => item.taskId === task.id && item.status === 'QUEUED').length, ...(team.regionId ? { title: task.title, points: task.points, brief: task.brief } : {}) }));
+  const photoGate = photoFindsEnabled(state);
+  const tasks = state.config.tasks.map(task => {
+    const slot = photoGate ? bingoSlotForTask(state, task) : task.sharedSlot ?? task.id;
+    const taskUnlocked = taskIsRevealed(state, team, task);
+    return { id: task.id, boardId: task.boardId, image: task.image, sharedSlot: slot,
+      ...(photoGate || team.regionId ? { points: task.points, difficulty: task.difficulty } : {}), taskUnlocked,
+      photoStatus: photoGate && validPhotoSlot(slot) ? photoFindStatus(state, team.id, team.regionId, slot) : undefined,
+      awarded: !!state.awards[task.id], pendingCount: state.submissions.filter(item => item.taskId === task.id && item.status === 'QUEUED').length,
+      ...(taskUnlocked ? { title: task.title, brief: task.brief, bonus: task.bonus, failurePenalty: task.failurePenalty } : {}) };
+  });
   return { ...common, team: { ...team, score: score(state, team.id) }, tasks, submissions: state.submissions.filter(item => item.teamId === team.id), cards: state.cards.filter(card => card.teamId === team.id), events: state.events.filter(event => event.teamId === team.id), effects: state.effects.filter(effect => effect.teamId === team.id), location: locationView(state, team) };
 }
 export function visibleMessages(state, actor, after = 0) {
@@ -114,13 +127,17 @@ export async function executeCommand(state, actor, command, key) {
   if (state.idempotency[keyId]) { requireRule(state.idempotency[keyId].fingerprint === fingerprint, 'IDEMPOTENCY_CONFLICT'); return state.idempotency[keyId].result; }
   const before = { status: state.status, configVersion: state.config.version, ledgerCount: state.ledger.length, submissionCount: state.submissions.length };
   let result;
-  if (command.type === 'game_configure') {
+  if (command.type === 'game_configure' || command.type === 'scoring_preset') {
     manage(actor); requireRule(state.mode === 'live' && state.status === 'READY' && command.reason?.trim(), 'CONFIG_INVALID', 400);
-    const tasks = normalizeBingoTasks(command.tasks, requireRule);
-    const rewards = command.boardRewards ?? [];
+    const input = command.type === 'scoring_preset' ? officialScoring : command;
+    const tasks = normalizeBingoTasks(input.tasks, requireRule);
+    const rewards = input.boardRewards ?? [];
+    const finishRewards = input.finishRewards == null ? state.config.finishRewards : validateFinishRewards(input.finishRewards, requireRule);
     const reserveTasks = validateReserveTasks(command.reserveTasks ?? state.config.reserveTasks ?? [], tasks, requireRule);
     requireRule(Array.isArray(rewards) && rewards.every(reward => Array.isArray(reward.tasks) && reward.tasks.length && reward.tasks.every(id => tasks.some(task => task.id === id)) && Number.isSafeInteger(reward.points) && reward.points >= 0 && reward.points <= 10000), 'REWARD_CONFIG_INVALID', 400);
-    state.configHistory.push(structuredClone(state.config)); state.config.tasks = tasks; state.config.reserveTasks = reserveTasks; state.config.boardRewards = rewards; state.config.version++; state.configured = true;
+    state.configHistory.push(structuredClone(state.config)); state.config.tasks = tasks; state.config.reserveTasks = reserveTasks; state.config.boardRewards = rewards; state.config.finishRewards = finishRewards; state.config.scoringVersion = command.type === 'scoring_preset' ? officialScoring.version : 'custom';
+    if (command.type === 'scoring_preset') state.config.taskLimit = officialScoring.taskLimit;
+    state.config.version++; state.configured = true;
     result = { configured: true, version: state.config.version };
   } else if (command.type.startsWith('ability_')) {
     result = abilityResultView(await abilityCommand(state, actor, command, { requireRule, manage, requireRunning, elapsed, score, credit, message, ranking, prepareMedia: (state, input, teamId) => prepareMedia(state, input, teamId, true) }), actor);
@@ -140,41 +157,60 @@ export async function executeCommand(state, actor, command, key) {
     requireRule(actor.role === 'player', 'FORBIDDEN', 403); requireRunning(state);
     const team = teamFor(state, actor); requireRule(!team.finishedAt, 'TEAM_FINISHED');
     if (command.kind === 'task') { requireRule(!taskPermissions(state, team.id).blockedBy.length, 'TASK_RESTRICTED'); requireRule(!state.activeAssignments[team.id] || state.activeAssignments[team.id].taskId === command.taskId, 'ASSIGNED_TASK_REQUIRED'); }
-    else requireRule(!state.activeAssignments[team.id], 'ASSIGNED_TASK_REQUIRED');
+    else if (command.kind !== 'photo') requireRule(!state.activeAssignments[team.id], 'ASSIGNED_TASK_REQUIRED');
     const regionIndex = state.config.regions.indexOf(command.regionId); requireRule(regionIndex >= 0, 'REGION_INVALID', 400);
     if (command.kind === 'arrival') requireRule(regionIndex === (team.regionId ? state.config.regions.indexOf(team.regionId) + 1 : 0), 'REGION_ORDER_INVALID');
-    else { requireRule(command.kind === 'task' && team.regionId === command.regionId, 'REGION_NOT_UNLOCKED'); requireRule(state.config.tasks.some(task => task.id === command.taskId), 'TASK_INVALID', 400); requireRule(!state.effects.some(effect => effect.teamId === team.id && effect.effect === 'restriction' && activeEffect(state, effect)), 'TASK_RESTRICTED'); }
-    const media = await prepareMedia(state, command.media, team.id);
-    const item = { id: randomUUID(), order: ++state.sequence, submittedAt: state.now, teamId: team.id, regionId: command.regionId, kind: command.kind, taskId: command.kind === 'task' ? command.taskId : null, mediaId: media.id, status: 'QUEUED' };
+    else if (command.kind === 'photo') {
+      requireRule(team.regionId === command.regionId, 'REGION_NOT_UNLOCKED');
+      requireRule(photoFindsEnabled(state) && validPhotoSlot(command.photoSlot) && state.config.tasks.some(task => bingoSlotForTask(state, task) === command.photoSlot), 'PHOTO_SLOT_INVALID', 400);
+      const photoStatus = photoFindStatus(state, team.id, command.regionId, command.photoSlot);
+      requireRule(photoStatus !== 'approved', 'PHOTO_ALREADY_APPROVED');
+      requireRule(photoStatus !== 'pending', 'PHOTO_REVIEW_PENDING');
+    } else {
+      requireRule(command.kind === 'task' && team.regionId === command.regionId, 'REGION_NOT_UNLOCKED');
+      const task = state.config.tasks.find(task => task.id === command.taskId); requireRule(task, 'TASK_INVALID', 400);
+      requireRule(taskIsRevealed(state, team, task), 'PHOTO_FIND_REQUIRED');
+      requireRule(!state.effects.some(effect => effect.teamId === team.id && effect.effect === 'restriction' && activeEffect(state, effect)), 'TASK_RESTRICTED');
+    }
+    const media = await prepareMedia(state, command.media, team.id, command.kind === 'task');
+    const item = { id: randomUUID(), order: ++state.sequence, submittedAt: state.now, teamId: team.id, regionId: command.regionId, kind: command.kind, taskId: command.kind === 'task' ? command.taskId : null, ...(command.kind === 'photo' ? { photoSlot: command.photoSlot } : {}), mediaId: media.id, status: 'QUEUED' };
     state.media[media.id] = media; state.submissions.push(item); message(state, 'staff', 'review_queue', '新增待审核项目', true, item.id);
     result = { code: 'SUBMITTED', submission: item, media: { id: media.id, sha256: media.sha256 } };
   } else if (command.type === 'review') {
-    requireRule(actor.review, 'FORBIDDEN', 403); requireRule(['RUNNING', 'PAUSED'].includes(state.status), 'GAME_NOT_REVIEWABLE');
+    requireRule(actor.role === 'staff' && actor.review, 'FORBIDDEN', 403); requireRule(['RUNNING', 'PAUSED'].includes(state.status), 'GAME_NOT_REVIEWABLE');
     const item = state.submissions.find(candidate => candidate.status === 'QUEUED');
     requireRule(item?.id === command.submissionId, 'FIFO_REQUIRED'); requireRule(['approve', 'reject'].includes(command.result), 'REVIEW_INVALID', 400);
     requireRule(command.result !== 'reject' || typeof command.reason === 'string' && command.reason.trim().length > 0, 'REASON_REQUIRED', 400);
     const team = state.teams.find(candidate => candidate.id === item.teamId);
+    const task = item.kind === 'task' ? state.config.tasks.find(candidate => candidate.id === item.taskId) : null;
+    const failedAttempts = command.failedAttempts ?? 0;
+    requireRule(Number.isSafeInteger(failedAttempts) && failedAttempts >= 0 && failedAttempts <= 100 && (failedAttempts === 0 || task?.failurePenalty && command.reason?.trim()), 'TASK_ATTEMPTS_INVALID', 400);
+    requireRule(command.performanceScore == null || task?.bonus && Number.isSafeInteger(command.performanceScore) && command.performanceScore >= 0 && command.reason?.trim(), 'TASK_PERFORMANCE_INVALID', 400);
     if (command.result === 'reject') item.status = 'REJECTED_RESUBMIT';
     else if (item.kind === 'arrival') {
       requireRule(!team.finishedAt, 'TEAM_FINISHED');
       requireRule(state.config.regions.indexOf(item.regionId) === (team.regionId ? state.config.regions.indexOf(team.regionId) + 1 : 0), 'REGION_ORDER_INVALID');
       team.regionId = item.regionId; team.regionVersion += 1; item.status = 'APPROVED';
       if (!state.events.some(event => event.teamId === team.id && event.regionId === item.regionId)) state.events.push({ id: randomUUID(), teamId: team.id, regionId: item.regionId, status: 'PENDING', draws: 0, candidate: null });
+    } else if (item.kind === 'photo') {
+      approvePhotoFind(state, item, actor);
     } else {
-      const task = state.config.tasks.find(candidate => candidate.id === item.taskId);
       const count = Object.values(state.awards).filter(award => award.teamId === team.id && award.regionId === item.regionId).length;
       if (!state.awards[item.taskId] && count < state.config.taskLimit) {
         state.awards[item.taskId] = { teamId: team.id, regionId: item.regionId, submissionId: item.id }; item.status = 'APPROVED_AWARDED';
         credit(state, team.id, task.points, 'TASK', task.id, actor, '最早有效提交');
+        if (task.bonus && command.performanceScore >= task.bonus.threshold) credit(state, team.id, task.bonus.points, 'TASK_BONUS', task.id, actor, command.reason);
         for (let index = 0; index < state.config.boardRewards.length; index++) {
           const reward = state.config.boardRewards[index];
           if (reward.tasks.every(id => state.awards[id]?.teamId === team.id)) credit(state, team.id, reward.points, 'BOARD', String(index), actor, '配置化棋盘奖励');
         }
       } else item.status = 'APPROVED_NON_SCORING';
     }
+    if (failedAttempts) credit(state, team.id, -task.failurePenalty * failedAttempts, 'TASK_PENALTY', `review:${item.id}`, actor, command.reason);
+    item.failedAttempts = failedAttempts; if (command.performanceScore != null) item.performanceScore = command.performanceScore;
     item.reviewedAt = state.now; item.operatorId = actor.id; item.reason = command.reason ?? '';
     abilityTaskReviewed(state, item, { message });
-    message(state, team.id, 'review', item.status, true, item.id); result = { submission: item };
+    message(state, team.id, 'review', item.kind === 'photo' ? (item.status === 'APPROVED' ? `图寻 #${Number(item.photoSlot.slice(1))} 已通过，对应任务已解锁。` : '图寻已打回，请重新复刻参考图的地点与拍摄角度。') : item.status, true, item.id); result = { submission: item };
   } else if (command.type === 'use_card') {
     requireRule(actor.role === 'player', 'FORBIDDEN', 403); requireRunning(state); requireRule(!teamFor(state, actor).finishedAt, 'TEAM_FINISHED');
     const card = state.cards.find(candidate => candidate.id === command.cardId && candidate.teamId === actor.teamId);
@@ -223,16 +259,44 @@ export async function executeCommand(state, actor, command, key) {
     const original = state.messages.find(message => message.id === item.id); if (!original.readBy.includes(actor.id)) original.readBy.push(actor.id);
     const deviceId = command.deviceId; requireRule(typeof deviceId === 'string' && deviceId.length > 0 && deviceId.length < 100, 'DEVICE_INVALID', 400);
     if (command.played && !original.playedBy.includes(deviceId)) original.playedBy.push(deviceId); result = { read: true, played: original.playedBy.includes(deviceId) };
+  } else if (command.type === 'task_nickname') {
+    requireRule(actor.role === 'player', 'FORBIDDEN', 403); requireRunning(state);
+    requireRule(!teamFor(state, actor).finishedAt && state.config.tasks.some(task => task.id === 'PHI24'), 'TASK_INVALID', 400);
+    requireRule(taskIsRevealed(state, teamFor(state, actor), state.config.tasks.find(task => task.id === 'PHI24')), 'PHOTO_FIND_REQUIRED');
+    const account = state.accounts.find(item => item.id === actor.id);
+    requireRule(account, 'FORBIDDEN', 403);
+    account.nickname = '零零五'; result = { nickname: account.nickname };
+  } else if (command.type === 'task_failure') {
+    manage(actor); requireRule(['RUNNING', 'PAUSED'].includes(state.status), 'GAME_NOT_REVIEWABLE');
+    const team = state.teams.find(item => item.id === command.teamId), task = state.config.tasks.find(item => item.id === command.taskId);
+    requireRule(team && !team.finishedAt && team.regionId && task?.failurePenalty && typeof command.attemptId === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(command.attemptId) && Number.isSafeInteger(command.count) && command.count > 0 && command.count <= 100 && command.reason?.trim(), 'TASK_ATTEMPTS_INVALID', 400);
+    state.taskFailures ??= {};
+    const record = { teamId: team.id, taskId: task.id, count: command.count, points: -task.failurePenalty * command.count, reason: command.reason };
+    const previous = state.taskFailures[command.attemptId];
+    requireRule(!previous || JSON.stringify(previous) === JSON.stringify(record), 'IDEMPOTENCY_CONFLICT');
+    if (!previous) { state.taskFailures[command.attemptId] = record; credit(state, team.id, record.points, 'TASK_PENALTY', `attempt:${command.attemptId}`, actor, command.reason); }
+    result = { ...record, score: score(state, team.id) };
   } else if (command.type === 'finish_team') {
     manage(actor); requireRunning(state);
-    requireRule(!state.abilityUses.some(use => (use.targets.includes(command.teamId) || use.casterTeamId === command.teamId) && (['PENDING', 'AWAITING_ACK', 'AWAITING_REVIEW'].includes(use.status) || use.status === 'ACTIVE' && ![3, 8].includes(use.number))), 'ABILITY_FINISH_BLOCKED');
-    const team = state.teams.find(item => item.id === command.teamId); requireRule(team, 'TEAM_NOT_FOUND', 404); requireRule(!team.finishedAt, 'TEAM_FINISHED');
-    team.finishedAt = state.now; credit(state, team.id, state.config.finishPoints, 'FINISH', team.id, actor, '工作人员现场确认'); result = { team, allFinished: state.teams.every(item => item.finishedAt) };
+    const ids = command.teamIds ?? [command.teamId];
+    requireRule(Array.isArray(ids) && ids.length > 0 && new Set(ids).size === ids.length && ids.every(id => state.teams.some(team => team.id === id)), 'TEAM_NOT_FOUND', 404);
+    const teams = ids.map(id => state.teams.find(team => team.id === id));
+    requireRule(teams.every(team => !team.finishedAt), 'TEAM_FINISHED');
+    requireRule(!state.abilityUses.some(use => (use.targets.some(id => ids.includes(id)) || ids.includes(use.casterTeamId)) && (['PENDING', 'AWAITING_ACK', 'AWAITING_REVIEW'].includes(use.status) || use.status === 'ACTIVE' && ![3, 8].includes(use.number))), 'ABILITY_FINISH_BLOCKED');
+    if (state.config.finishRewards) {
+      requireRule(command.reason?.trim(), 'REASON_REQUIRED', 400);
+      requireRule(teams.every(team => team.regionId === state.config.regions.at(-1)), 'FINISH_REGION_REQUIRED');
+      requireRule(!state.submissions.some(item => ids.includes(item.teamId) && item.status === 'QUEUED'), 'FINISH_TASKS_PENDING');
+    }
+    const award = finishAward(state, teams.length);
+    for (const team of teams) { team.finishedAt = state.now; team.finishRank = award.firstRank; team.finishPoints = award.points; credit(state, team.id, award.points, 'FINISH', team.id, actor, command.reason ?? '工作人员现场确认'); }
+    result = { team: teams[0], teams, finishRank: award.firstRank, points: award.points, allFinished: state.teams.every(item => item.finishedAt != null) };
   } else if (command.type === 'correct_score') {
     manage(actor); requireRule(command.reason?.trim() && Number.isSafeInteger(command.points) && Math.abs(command.points) <= 10000 && state.teams.some(team => team.id === command.teamId), 'CORRECTION_INVALID', 400);
     credit(state, command.teamId, command.points, 'CORRECTION', randomUUID(), actor, command.reason); result = { score: score(state, command.teamId) };
   } else if (command.type === 'configure') {
     manage(actor); requireRule(command.reason?.trim(), 'REASON_REQUIRED', 400);
+    requireRule(!state.config.finishRewards || command.patch?.finishPoints == null, 'CONFIG_INVALID', 400);
     requireRule(command.patch && Object.keys(command.patch).every(name => ['taskLimit', 'storageWarnBytes', 'finishPoints'].includes(name)) && Object.values(command.patch).every(value => Number.isSafeInteger(value) && value > 0), 'CONFIG_INVALID', 400);
     state.configHistory.push(structuredClone(state.config)); state.config = { ...state.config, ...command.patch, version: state.config.version + 1 }; result = { version: state.config.version };
   } else throw new RuleError('COMMAND_UNKNOWN', '未实现的测试命令', 400);
