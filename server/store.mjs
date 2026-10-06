@@ -34,6 +34,17 @@ function storeAdapter(connect, close, driver) {
       } finally { connection.release(); }
     },
     async health() { const connection = await connect(); try { await connection.query('SELECT 1'); return driver; } finally { connection.release(); } },
+    async gamesDueAbilityWave(intervalMs) {
+      const connection = await connect();
+      // 只在到达发卡边界时写赛局，避免每秒重写包含媒体原件的整份 JSON。
+      try { return (await connection.query(`SELECT id FROM hrg_games
+        WHERE state->>'status'='RUNNING'
+        AND COALESCE((state->>'lastAbilityPeriodicWave')::bigint,0) < FLOOR(
+          (COALESCE((state->>'elapsedMs')::bigint,0) + $1::bigint - COALESCE((state->>'runningSince')::bigint,$1::bigint)) / $2::numeric)
+        AND (state->'abilityCatalog' IS NULL OR EXISTS (
+          SELECT 1 FROM jsonb_array_elements(state->'abilityCatalog') card WHERE card->>'enabled'='true'))`, [Date.now(), intervalMs])).rows.map(row => row.id); }
+      finally { connection.release(); }
+    },
     async create(state, live = false) {
       const table = live ? 'hrg_games' : 'hrg_test_runs';
       const connection = await connect();

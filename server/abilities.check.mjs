@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTestServer } from './app.mjs';
 import { createLocalStore } from './store.mjs';
+import { runGlobalCardGrantCheck } from '../src/testing/globalCardGrantCheck.ts';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 const key = 'ability-tests-control-key-abcdefghijklmnopqrstuvwxyz';
 const image = { name: 'proof.png', mime: 'image/png', base64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=' };
@@ -252,3 +256,50 @@ test('无中生有到期禁止新增证据，未完成扣5分并解除任务；�
   assert.equal((await state('opponent')).team.score, -10);
   await call('host', { type: 'ability_review', useId: silent.id, teamId: 'team-2', result: 'reject', reason: '重复' }, 409);
 }));
+
+test('五队真实 HTTP 验证10/20任务全队发卡、重复审核幂等以及共享库存并发消费', async () => {
+  const store = await createLocalStore(); const app = await createTestServer({ store, testKey: key, enabled: true });
+  try {
+    const address = await app.listen({ port: 0, host: '127.0.0.1' });
+    const result = await runGlobalCardGrantCheck({ baseUrl: address, key }); assert.equal(result.status, 'passed', result.detail);
+  } finally { await app.close(); await store.close(); }
+});
+
+test('发卡轮次、卡牌ID和完成任务去重在数据库重启后保留，旧区域奖励不再触发', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'hrgos-card-grants-'));
+  let store = await createLocalStore(directory); let app = await createTestServer({ store, testKey: key, enabled: true });
+  try {
+    const run = (await app.inject({ method: 'POST', url: '/api/testing/runs', headers: { authorization: `Bearer ${key}` }, payload: { teamCount: 5 } })).json();
+    const tokens = {};
+    for (const role of ['host', 'player', 'member']) tokens[role] = (await app.inject({ method: 'POST', url: `/api/testing/runs/${run.id}/login`, payload: run.credentials[role] })).json().token;
+    const command = async (role, payload) => {
+      const response = await app.inject({ method: 'POST', url: `/api/testing/runs/${run.id}/commands`, headers: { authorization: `Bearer ${tokens[role]}`, 'idempotency-key': crypto.randomUUID() }, payload });
+      assert.equal(response.statusCode, 200, response.body); return response.json();
+    };
+    const view = async role => (await app.inject({ url: `/api/testing/runs/${run.id}/state`, headers: { authorization: `Bearer ${tokens[role]}` } })).json();
+    await command('host', { type: 'transition', status: 'RUNNING' });
+    const arrival = await command('player', { type: 'submit', kind: 'arrival', regionId: 'stage-a', media: image });
+    await command('host', { type: 'review', submissionId: arrival.submission.id, result: 'approve' });
+    // 模拟升级前已有9项通过审核的持久记录；新规则不依赖任务计分归属。
+    await store.update(run.id, state => {
+      state.submissions.push(...Array.from({ length: 9 }, (_, index) => ({ id: `historic-${index}`, teamId: index < 5 ? 'team-1' : 'team-2', kind: 'task', taskId: `T${String(index + 1).padStart(2, '0')}`, status: 'APPROVED_NON_SCORING' })));
+      state.abilityRegionGrants = ['team-1:stage-a']; delete state.abilityTaskGrants; return {};
+    });
+    const complete = async (role, taskId) => {
+      const item = await command(role, { type: 'submit', kind: 'task', taskId, regionId: 'stage-a', media: image });
+      await command('host', { type: 'review', submissionId: item.submission.id, result: 'approve', reason: '现场确认' });
+    };
+    await complete('player', 'T10'); const first = await view('host');
+    assert.equal(first.abilityProgress.completedTasks, 10); assert.equal(first.abilityCards.length, 5);
+    const cardIds = first.abilityCards.map(card => card.id).sort();
+    await app.close(); await store.close(); store = await createLocalStore(directory); app = await createTestServer({ store, testKey: key, enabled: true });
+    assert.deepEqual((await view('host')).abilityCards.map(card => card.id).sort(), cardIds);
+    await complete('member', 'T10'); const after = await view('host');
+    assert.equal(after.abilityProgress.completedTasks, 10); assert.equal(after.abilityProgress.distributedRounds, 1); assert.equal(after.abilityCards.length, 5);
+    assert.deepEqual((await view('player')).abilityCards.map(card => card.id), (await view('member')).abilityCards.map(card => card.id));
+    assert.equal((await store.read(run.id)).abilityTaskGrants.length, 1);
+  } finally {
+    await app.close(); await store.close();
+    if (resolve(directory).startsWith(resolve(tmpdir()) + '\\') && directory.includes('hrgos-card-grants-')) await rm(directory, { recursive: true, force: true });
+  }
+});

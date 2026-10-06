@@ -1,6 +1,7 @@
 import { randomUUID, randomInt, createHash } from 'node:crypto';
 
 const minute = 60000;
+export const periodicAbilityIntervalMs = 30 * minute;
 const definitions = [
   ['合照换分', '与对方碰面并合照，经工作人员确认后交换双方当前总积分。', 20, 'other', 0, 5],
   ['原地冻结', '指定队伍保持位置不移动 5 分钟。', 5, 'other', 0, 5],
@@ -34,6 +35,12 @@ export function ensureAbilities(state) {
   for (const definition of abilityCatalog) if (!state.abilityCatalog.some(card => card.number === definition.number)) state.abilityCatalog.push(structuredClone(definition));
   state.abilityCards ??= []; state.abilityUses ??= []; state.abilityConfigHistory ??= []; state.abilityRegionGrants ??= []; state.activeAssignments ??= {};
   state.config.reserveTasks ??= []; state.abilityExtraDraws ??= [];
+  state.abilityPeriodicWaves ??= []; state.lastAbilityPeriodicWave ??= 0;
+  state.abilityTaskGrants ??= [];
+}
+export function abilityTaskProgress(state) {
+  const completedTasks = new Set(state.submissions.filter(item => item.kind === 'task' && item.status.startsWith('APPROVED')).map(item => `${item.teamId}:${item.taskId}`)).size;
+  return { completedTasks, interval: 10, distributedRounds: state.abilityTaskGrants.length, nextAt: (state.abilityTaskGrants.length + 1) * 10 };
 }
 export const validTaskDefinition = task => task && typeof task.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(task.id) && typeof task.title === 'string' && task.title.trim() && task.title.length <= 100 && typeof task.brief === 'string' && task.brief.trim() && task.brief.length <= 2000 && Number.isSafeInteger(task.points) && task.points > 0 && task.points <= 10000;
 export function validateReserveTasks(tasks, boardTasks, check) {
@@ -44,9 +51,25 @@ const extraCandidates = (state, teamId) => state.config.reserveTasks.filter(task
 const gameTime = state => state.elapsedMs + (state.status === 'RUNNING' ? state.now - state.runningSince : 0);
 export const abilityActive = (state, use) => use.status === 'ACTIVE' && use.startedAt != null && gameTime(state) - use.startedAt < use.definition.durationMs;
 export const abilityScoreAccess = (state, teamId) => (state.abilityUses ?? []).some(use => use.number === 3 && use.casterTeamId === teamId && abilityActive(state, use));
-export function abilityTick(state) {
+export function abilityTick(state, services) {
   ensureAbilities(state);
   for (const use of state.abilityUses) if (use.status === 'ACTIVE' && !abilityActive(state, use)) use.status = [3, 8].includes(use.number) ? 'DONE' : 'AWAITING_REVIEW';
+  if (state.status !== 'RUNNING' || !services) return;
+  const due = Math.floor(gameTime(state) / periodicAbilityIntervalMs);
+  const pool = state.abilityCatalog.filter(card => card.enabled);
+  if (!pool.length) return;
+  // 每次事务最多补齐12小时；较长离线期间的剩余轮次由下一次扫描继续补齐。
+  const last = Math.min(due, state.lastAbilityPeriodicWave + 24);
+  for (let wave = state.lastAbilityPeriodicWave + 1; wave <= last; wave++) {
+    const recipients = state.teams;
+    const cards = recipients.map(team => {
+      const card = { id: randomUUID(), number: pool[randomInt(pool.length)].number, teamId: team.id, status: 'AVAILABLE', grantedAt: state.now, reason: `每半小时自动发放 · 第${wave}轮`, source: 'periodic', wave, scheduledElapsedMs: wave * periodicAbilityIntervalMs, revealedBy: [] };
+      state.abilityCards.push(card); services.message(state, team.id, 'ability_grant', `第${wave}轮能力卡已发放，点击查看`, true, card.id);
+      return { teamId: team.id, cardId: card.id };
+    });
+    state.abilityPeriodicWaves.push({ wave, scheduledElapsedMs: wave * periodicAbilityIntervalMs, grantedAt: state.now, cards });
+    state.lastAbilityPeriodicWave = wave;
+  }
 }
 export function taskPermissions(state, teamId) {
   ensureAbilities(state); const active = state.abilityUses.filter(use => use.targets.includes(teamId) && abilityActive(state, use));
@@ -59,23 +82,31 @@ export function abilityTaskReviewed(state, item, services) {
   const permission = taskPermissions(state, item.teamId);
   if (permission.twoHands) { const use = state.abilityUses.find(use => use.number === 8 && use.casterTeamId === item.teamId && abilityActive(state, use)); use.status = 'DONE'; use.consumedByTask = item.id; }
   if (state.activeAssignments[item.teamId]?.taskId === item.taskId) delete state.activeAssignments[item.teamId];
-  const count = Object.values(state.awards).filter(award => award.teamId === item.teamId && award.regionId === item.regionId).length;
-  const grantId = `${item.teamId}:${item.regionId}`;
-  if (count >= state.config.taskLimit && !state.abilityRegionGrants.includes(grantId)) {
-    const pool = state.abilityCatalog.filter(card => card.enabled); if (!pool.length) return;
-    const card = { id: randomUUID(), number: pool[randomInt(pool.length)].number, teamId: item.teamId, status: 'AVAILABLE', grantedAt: state.now, reason: '完成区域自动发放', regionId: item.regionId };
-    state.abilityCards.push(card); state.abilityRegionGrants.push(grantId); services.message(state, item.teamId, 'ability_grant', '完成区域，获得一张能力卡', true, card.id);
+  const { completedTasks } = abilityTaskProgress(state);
+  const pool = state.abilityCatalog.filter(card => card.enabled); if (!pool.length) return;
+  for (let round = 1; round <= Math.floor(completedTasks / 10); round++) {
+    if (state.abilityTaskGrants.some(grant => grant.round === round)) continue;
+    const cards = state.teams.map(team => ({ id: randomUUID(), number: pool[randomInt(pool.length)].number, teamId: team.id, status: 'AVAILABLE', grantedAt: state.now, reason: `全体累计完成${round * 10}个任务自动发放`, grantRound: round, source: 'tasks', revealedBy: [] }));
+    state.abilityCards.push(...cards);
+    state.abilityTaskGrants.push({ round, completedTasks: round * 10, at: state.now, cardIds: cards.map(card => card.id) });
+    for (const card of cards) services.message(state, card.teamId, 'ability_grant', `全体累计完成 ${round * 10} 个任务，本队获得一张共享能力卡`, true, card.id);
   }
 }
 export function abilityView(state, actor) {
   ensureAbilities(state);
   const staff = actor.manage || actor.review;
-  return { reserveTasks: staff ? state.config.reserveTasks : undefined, abilityCatalog: state.abilityCatalog, abilityCards: state.abilityCards.filter(card => staff || card.teamId === actor.teamId), abilityUses: state.abilityUses.filter(use => staff || use.casterTeamId === actor.teamId || use.targets.includes(actor.teamId) || use.number === 19 && abilityActive(state, use)).map(use => publicUse(use, actor)), huntLocations: state.abilityUses.filter(use => use.number === 19 && abilityActive(state, use)).map(use => ({ teamId: use.casterTeamId, useId: use.id, ...state.locations[use.casterTeamId], online: !!state.locations[use.casterTeamId] && !state.locations[use.casterTeamId].restored && state.now - state.locations[use.casterTeamId].receivedAt < state.config.offlineMs })), activeAssignment: state.activeAssignments[actor.teamId] ?? null, roster: state.accounts.filter(account => account.teamId && (staff || account.teamId === actor.teamId)).map(account => ({ id: account.id, username: account.username, nickname: account.nickname ?? account.username, teamId: account.teamId, leader: !!account.leader })), teamChoices: state.teams.map(team => ({ id: team.id, name: team.name, finished: !!team.finishedAt })) };
+  return { periodicAbility: { intervalMs: periodicAbilityIntervalMs, distributedRounds: state.lastAbilityPeriodicWave, nextAtElapsedMs: (state.lastAbilityPeriodicWave + 1) * periodicAbilityIntervalMs, remainingMs: Math.max(0, (state.lastAbilityPeriodicWave + 1) * periodicAbilityIntervalMs - gameTime(state)), history: staff ? state.abilityPeriodicWaves : undefined }, abilityProgress: abilityTaskProgress(state), reserveTasks: staff ? state.config.reserveTasks : undefined, abilityCatalog: state.abilityCatalog, abilityCards: state.abilityCards.filter(card => staff || card.teamId === actor.teamId), abilityUses: state.abilityUses.filter(use => staff || use.casterTeamId === actor.teamId || use.targets.includes(actor.teamId) || use.number === 19 && abilityActive(state, use)).map(use => publicUse(use, actor)), huntLocations: state.abilityUses.filter(use => use.number === 19 && abilityActive(state, use)).map(use => ({ teamId: use.casterTeamId, useId: use.id, ...state.locations[use.casterTeamId], online: !!state.locations[use.casterTeamId] && !state.locations[use.casterTeamId].restored && state.now - state.locations[use.casterTeamId].receivedAt < state.config.offlineMs })), activeAssignment: state.activeAssignments[actor.teamId] ?? null, roster: state.accounts.filter(account => account.teamId && (staff || account.teamId === actor.teamId)).map(account => ({ id: account.id, username: account.username, nickname: account.nickname ?? account.username, teamId: account.teamId, leader: !!account.leader })), teamChoices: state.teams.map(team => ({ id: team.id, name: team.name, finished: !!team.finishedAt })) };
 }
 const publicUse = (use, actor) => ({ ...use, evidence: use.evidence.filter(item => actor.manage || actor.review || item.teamId === actor.teamId), anchors: actor.locations ? use.anchors : undefined, returnPosition: actor.locations || use.targets.includes(actor.teamId) ? use.returnPosition : undefined });
 export const abilityResultView = (result, actor) => result.use ? { ...result, use: publicUse(result.use, actor) } : result;
 export async function abilityCommand(state, actor, command, services) {
   ensureAbilities(state); const { requireRule: check, manage } = services;
+  if (command.type === 'ability_reveal') {
+    const card = state.abilityCards.find(card => card.id === command.instanceId && card.teamId === actor.teamId);
+    check(actor.role === 'player' && card && Array.isArray(card.revealedBy), 'FORBIDDEN', 403);
+    card.revealedBy ??= []; if (!card.revealedBy.includes(actor.id)) card.revealedBy.push(actor.id);
+    return { revealed: true, instanceId: card.id };
+  }
   if (command.type === 'ability_reserve_configure') {
     manage(actor); check(['READY', 'RUNNING', 'PAUSED'].includes(state.status) && command.reason?.trim(), 'CONFIG_INVALID', 400);
     const tasks = validateReserveTasks(command.tasks, state.config.tasks, check);
@@ -86,7 +117,7 @@ export async function abilityCommand(state, actor, command, services) {
     manage(actor); check(command.reason?.trim(), 'REASON_REQUIRED', 400);
     const definition = state.abilityCatalog.find(card => card.number === command.number);
     check(definition?.enabled && state.teams.some(team => team.id === command.teamId && !team.finishedAt), 'CARD_UNAVAILABLE');
-    const card = { id: randomUUID(), number: definition.number, teamId: command.teamId, status: 'AVAILABLE', grantedAt: state.now, reason: command.reason };
+    const card = { id: randomUUID(), number: definition.number, teamId: command.teamId, status: 'AVAILABLE', grantedAt: state.now, reason: command.reason, source: 'staff', revealedBy: [] };
     state.abilityCards.push(card); services.message(state, command.teamId, 'ability_grant', `获得能力卡：${definition.title}`, true, card.id); return { card };
   }
   if (command.type === 'ability_configure') {

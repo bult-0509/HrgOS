@@ -45,9 +45,9 @@ function locationView(state, team) {
   const position = state.locations[team.id];
   return { teamId: team.id, name: team.name, ...(position ?? {}), status: team.finishedAt ? 'finished' : position && !position.restored && state.now - position.receivedAt < state.config.offlineMs ? 'online' : 'offline', color: team.finishedAt ? '#f6c84f' : '#c8ff32', finishedAt: team.finishedAt };
 }
-export function tick(state) {
+export function tick(state, issueCards = true) {
   state.now = state.virtualTime ?? Date.now();
-  abilityTick(state);
+  abilityTick(state, issueCards ? { message } : undefined);
   const period = Math.floor(elapsed(state) / state.config.rankingIntervalMs);
   if (period > 0 && !state.snapshots.some(snapshot => snapshot.period === period)) state.snapshots.push({ period, at: state.now, elapsed: period * state.config.rankingIntervalMs, ranking: ranking(state) });
 }
@@ -71,7 +71,7 @@ export function visibleMessages(state, actor, after = 0) {
     .map(item => ({ ...item, read: item.readBy.includes(actor.id), readBy: undefined, playedBy: undefined }));
 }
 export function allowedScore(state, actor, target) {
-  tick(state);
+  tick(state, false);
   requireRule(actor.manage || target === actor.teamId || abilityScoreAccess(state, actor.teamId) || state.effects.some(effect => effect.effect === 'score_access' && effect.viewerTeamId === actor.teamId && effect.teamId === target && activeEffect(state, effect)), 'FORBIDDEN', 403);
   requireRule(state.teams.some(team => team.id === target), 'TEAM_NOT_FOUND', 404);
   return { teamId: target, score: score(state, target) };

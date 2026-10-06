@@ -1,4 +1,6 @@
 import { validateTestApiBase } from './ruleSuite.ts';
+import { runGlobalCardGrantCheck } from './globalCardGrantCheck.ts';
+import { runPeriodicCardGrantCheck } from './periodicCardGrantCheck.ts';
 import type { RuleResult, SuiteOptions, SuiteReport } from './ruleSuite';
 
 const image = { name: 'ability-proof.png', mime: 'image/png', base64: 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEUlEQVR4nGPgkuT6D8IMMAYAJKIEsYXC9Q4AAAAASUVORK5CYII=' };
@@ -74,6 +76,8 @@ export async function runAbilitySuite(options: SuiteOptions): Promise<SuiteRepor
     } catch (error) { if (options.signal?.aborted) throw error; publish({ id: `CARD-${String(number).padStart(2, '0')}`, title: `${number}. ${titles[number - 1]}`, status: 'failed', detail: error instanceof Error ? error.message : String(error), durationMs: Math.round(performance.now() - start) }); }
     finally { if (fixture?.id) { try { const response = await fetch(`${base}/api/testing/runs/${fixture.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${options.key}` }, signal: AbortSignal.timeout(10000) }); if (!response.ok) publish({ id: 'CLEANUP', title: '清理隔离赛局', status: 'failed', detail: `HTTP ${response.status}`, durationMs: 0 }); } catch (error) { publish({ id: 'CLEANUP', title: '清理隔离赛局', status: 'failed', detail: String(error), durationMs: 0 }); } } }
   }
+  publish(await runGlobalCardGrantCheck(options));
+  publish(await runPeriodicCardGrantCheck(options));
   publish({ id: 'CARDS-MANUAL', title: '现场与异地部署验收', status: 'manual', detail: '需三人队伍和真实手机验收动作、昵称拼词、朗诵、合照、歌曲难度、饮品及真实返回；异地 PostgreSQL、GPS、视频可播放性和公网延迟须部署后实测。', durationMs: 0 });
   return { startedAt, finishedAt: new Date().toISOString(), target: base, database: health.database, results, passed: results.filter(item => item.status === 'passed').length, failed: results.filter(item => item.status === 'failed').length, manual: results.filter(item => item.status === 'manual').length };
 }

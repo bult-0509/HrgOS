@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
 import { randomBytes, createHash } from 'node:crypto';
 import { registerLiveRoutes } from './liveRoutes.mjs';
+import { registerLiveClock } from './liveClock.mjs';
 import { createAccounts, readSession, secureEqual, signSession, verifyPassword } from './auth.mjs';
 import { advanceClock, allowedScore, executeCommand, exportBackup, restoreBackup, seedState, stateView, visibleMedia, visibleMessages } from './rules.mjs';
 
@@ -55,17 +56,17 @@ export async function createTestServer({ store, testKey, gameAdminKey, liveAccou
       throw Object.assign(new Error('请等待游戏开始'), { statusCode: 401 });
     }
     attempts.delete(source);
-    return { token: signSession(request.params.runId, account.id, testKey), role: account.role, teamId: account.teamId, leader: account.leader ?? false };
+    return { token: signSession(request.params.runId, account.id, testKey), role: account.role, teamId: account.teamId, leader: account.leader ?? false, accountId: account.id };
   });
   app.get('/api/testing/runs/:runId/state', async request => {
     const { account } = await session(request);
     return store.update(request.params.runId, state => stateView(state, account));
   });
   const broadcast = async runId => {
-    const state = await store.read(runId);
-    for (const connection of connections) if (connection.runId === runId && connection.socket.readyState === 1) {
-      connection.socket.send(JSON.stringify({ type: 'state', sequence: state.sequence, state: stateView(state, connection.account), messages: visibleMessages(state, connection.account) }));
-    }
+    const targets = [...connections].filter(connection => connection.runId === runId && connection.socket.readyState === 1);
+    if (!targets.length) return;
+    const payloads = await store.update(runId, state => targets.map(connection => ({ type: 'state', state: stateView(state, connection.account), sequence: state.sequence, messages: visibleMessages(state, connection.account) })));
+    targets.forEach((connection, index) => { if (connection.socket.readyState === 1) connection.socket.send(JSON.stringify(payloads[index])); });
   };
   app.post('/api/testing/runs/:runId/commands', async request => {
     const { account } = await session(request);
@@ -96,13 +97,15 @@ export async function createTestServer({ store, testKey, gameAdminKey, liveAccou
     socket.on('error', () => {});
     socket.on('close', () => { if (connection) connections.delete(connection); });
     socket.on('message', () => { if (socket.readyState === 1) socket.send(JSON.stringify({ type: 'notice', message: '写操作使用已鉴权 HTTPS commands 接口；此连接接收状态更新。' })); });
-    session(request).then(({ account, state }) => {
+    session(request).then(async ({ account }) => {
       if (socket.readyState !== 1) return;
       connection = { socket, runId: request.params.runId, account }; connections.add(connection);
-      socket.send(JSON.stringify({ type: 'ready', sequence: state.sequence, state: stateView(state, account) }));
+      const payload = await store.update(request.params.runId, state => ({ type: 'ready', state: stateView(state, account), sequence: state.sequence }));
+      if (socket.readyState === 1) socket.send(JSON.stringify(payload));
     }).catch(() => socket.close(1008, 'AUTH_REQUIRED'));
   });
   app.delete('/api/testing/runs/:runId', async request => { control(request); await store.remove(request.params.runId); return { removed: true }; });
   await registerLiveRoutes(app, store, gameAdminKey, liveAccounts);
+  if (gameAdminKey) registerLiveClock(app, store);
   return app;
 }
