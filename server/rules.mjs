@@ -26,7 +26,7 @@ export function seedState(accounts) {
     },
     configHistory: [], teams: [{ id: 'team-1', name: '测试一队', regionId: null, regionVersion: 0, finishedAt: null }, { id: 'team-2', name: '测试二队', regionId: null, regionVersion: 0, finishedAt: null }],
     submissions: [], awards: {}, media: {}, ledger: [], events: [], cards: [{ id: 'boost', teamId: 'team-1', uses: 1, effect: 'score', amount: 3, target: 'self', needsConfirmation: false }, { id: 'scan', teamId: 'team-1', uses: 1, effect: 'score_access', durationMs: 300000, target: 'other', needsConfirmation: false }, { id: 'jam', teamId: 'team-1', uses: 1, effect: 'restriction', durationMs: 300000, target: 'other', needsConfirmation: true }],
-    cardRequests: [], effects: [], locations: {}, locationHistory: [], snapshots: [], messages: [], audit: [], idempotency: {}
+    cardRequests: [], effects: [], locations: {}, locationHistory: [], snapshots: [], messages: [], challenges: [], audit: [], idempotency: {}
   };
 }
 
@@ -46,6 +46,11 @@ function message(state, teamId, type, text, pushEligible = false, reference = nu
   const item = { id: ++state.sequence, teamId, type, text, pushEligible, pushStatus: pushEligible ? 'unconfigured' : 'not-required', at: state.now, reference, readBy: [], playedBy: [], ...(extra ?? {}) };
   state.messages.push(item);
   return item;
+}
+/** 特殊人物（线下工作人员）需要知道当前分数最低的未完赛队伍。并列时取先出现的一支。 */
+function lowestScoringTeamId(state) {
+  const active = state.teams.filter(team => team.finishedAt == null);
+  return active.length ? active.reduce((lowest, team) => score(state, team.id) < score(state, lowest.id) ? team : lowest, active[0]).id : null;
 }
 function locationView(state, team) {
   const position = state.locations[team.id];
@@ -67,7 +72,7 @@ export function stateView(state, actor) {
   if (actor.role === 'staff') {
     if (!actor.manage && !actor.review) return { ...common, locations: actor.locations ? state.teams.map(team => locationView(state, team)) : [] };
     const metadata = JSON.stringify({ ...state, media: Object.fromEntries(Object.entries(state.media).map(([id, media]) => [id, { ...media, base64: undefined, thumbnail: undefined }])) });
-    return { ...common, teams: state.teams.map(team => ({ ...team, score: score(state, team.id) })), allFinished: state.teams.every(team => team.finishedAt != null), queue: state.submissions.filter(item => item.status === 'QUEUED'), submissions: state.submissions, awards: state.awards, ledger: state.ledger, events: state.events, cardRequests: state.cardRequests, effects: state.effects, snapshots: state.snapshots, audit: state.audit, locations: actor.locations ? state.teams.map(team => locationView(state, team)) : undefined, locationHistory: actor.locations ? state.locationHistory : undefined, storage: { metadataBytes: Buffer.byteLength(metadata), warning: Buffer.byteLength(metadata) >= state.config.storageWarnBytes }, finishBlockers: { queued: state.submissions.filter(item => item.status === 'QUEUED').length, pendingCards: state.cardRequests.filter(item => item.status === 'PENDING').length } };
+    return { ...common, teams: state.teams.map(team => ({ ...team, score: score(state, team.id) })), allFinished: state.teams.every(team => team.finishedAt != null), queue: state.submissions.filter(item => item.status === 'QUEUED'), submissions: state.submissions, awards: state.awards, ledger: state.ledger, events: state.events, cardRequests: state.cardRequests, effects: state.effects, snapshots: state.snapshots, challenges: state.challenges ?? [], lowestTeamId: lowestScoringTeamId(state), audit: state.audit, locations: actor.locations ? state.teams.map(team => locationView(state, team)) : undefined, locationHistory: actor.locations ? state.locationHistory : undefined, storage: { metadataBytes: Buffer.byteLength(metadata), warning: Buffer.byteLength(metadata) >= state.config.storageWarnBytes }, finishBlockers: { queued: state.submissions.filter(item => item.status === 'QUEUED').length, pendingCards: state.cardRequests.filter(item => item.status === 'PENDING').length } };
   }
   const team = teamFor(state, actor);
   const photoGate = photoFindsEnabled(state);
@@ -80,7 +85,7 @@ export function stateView(state, actor) {
       awarded: !!state.awards[task.id], pendingCount: state.submissions.filter(item => item.taskId === task.id && item.status === 'QUEUED').length,
       ...(taskUnlocked ? { title: task.title, brief: task.brief, bonus: task.bonus, failurePenalty: task.failurePenalty } : {}) };
   });
-  return { ...common, team: { ...team, score: score(state, team.id) }, tasks, submissions: state.submissions.filter(item => item.teamId === team.id), cards: state.cards.filter(card => card.teamId === team.id), events: state.events.filter(event => event.teamId === team.id), effects: state.effects.filter(effect => effect.teamId === team.id), location: locationView(state, team) };
+  return { ...common, team: { ...team, score: score(state, team.id) }, tasks, submissions: state.submissions.filter(item => item.teamId === team.id), cards: state.cards.filter(card => card.teamId === team.id), events: state.events.filter(event => event.teamId === team.id), effects: state.effects.filter(effect => effect.teamId === team.id), challenges: (state.challenges ?? []).filter(item => item.teamId === team.id), location: locationView(state, team) };
 }
 export function visibleMessages(state, actor, after = 0) {
   return state.messages.filter(item => item.id > after && (item.teamId === actor.teamId || item.teamId === 'all' || (item.teamId === 'staff' && actor.review)))
@@ -262,6 +267,20 @@ export async function executeCommand(state, actor, command, key) {
     // 收件人固定为工作人员；发送方队伍写进 reference 与 fromTeamId，供工作人员界面显示来源。
     const item = message(state, 'staff', 'player_text', text, true, team.id, { fromTeamId: team.id, fromAccountId: actor.id });
     result = { message: { id: item.id, text: item.text, teamId: team.id, at: item.at } };
+  } else if (command.type === 'send_challenge') {
+    manage(actor); requireRunning(state);
+    const teamId = command.teamId;
+    requireRule(state.teams.some(team => team.id === teamId), 'TARGET_INVALID', 400);
+    const title = typeof command.title === 'string' ? command.title.trim() : '';
+    const description = typeof command.description === 'string' ? command.description.trim() : '';
+    requireRule(title.length > 0 && title.length <= 100 && description.length > 0 && description.length <= 2000, 'CHALLENGE_INVALID', 400);
+    requireRule(Number.isSafeInteger(command.rewardPoints) && command.rewardPoints >= 0 && command.rewardPoints <= 10000, 'CHALLENGE_INVALID', 400);
+    // 特殊人物由工作人员线下扮演。系统只负责把挑战发给被抓到的队伍并留痕，
+    // 是否完成、加减多少分由工作人员现场判定，用 correct_score 手动入账。
+    const challenge = { id: randomUUID(), teamId, title, description, rewardPoints: command.rewardPoints, status: 'ISSUED', issuedBy: actor.id, issuedAt: state.now };
+    (state.challenges ??= []).push(challenge);
+    message(state, teamId, 'challenge', `特殊挑战：${title}｜${description}`, true, challenge.id);
+    result = { challenge };
   } else if (command.type === 'location') {
     requireRule(actor.role === 'player' && actor.leader, 'LEADER_ONLY', 403); requireRunning(state);
     const team = teamFor(state, actor); requireRule(!team.finishedAt, 'TEAM_FINISHED'); requireRule(command.foreground === true, 'PAGE_NOT_FOREGROUND');
