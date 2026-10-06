@@ -36,7 +36,7 @@ const fs=require('node:fs/promises'),path=require('node:path'),assert=require('n
    for(const index of [0,4,20,24])await page.locator('.cell').nth(index).click({trial:true});
    await page.evaluate(()=>scrollTo(0,0));
    await page.screenshot({path:path.join(out,`${viewport.width}-${ids[i]}.png`),fullPage:true});
-   results.push({team:ids[i],viewport:viewport.width,frame:state.src,minCellWidth:Math.min(...state.cells.map(c=>c.width)),minCellHeight:Math.min(...state.cells.map(c=>c.height)),decorationPixelsInCells:occupied,samples});
+   results.push({team:ids[i],viewport:viewport.width,frame:state.src,bounds:state.frame,minCellWidth:Math.min(...state.cells.map(c=>c.width)),minCellHeight:Math.min(...state.cells.map(c=>c.height)),decorationPixelsInCells:occupied,samples});
   }
  }
  await page.setViewportSize({width:1440,height:1050});
@@ -51,7 +51,8 @@ const fs=require('node:fs/promises'),path=require('node:path'),assert=require('n
  console.log(JSON.stringify({independentFrames:5,viewports:4,checks:results.length,decorationPixelsInCells:0,modalFocusReturn:true,reducedMotion:true,errors}));
  // 自有页面截图的对照图；不改动源照片或角色文件。
  const crops=await Promise.all(ids.map(async id=>{
-  const input=await sharp(path.join(out,`1440-${id}.png`)).extract({left:220,top:105,width:780,height:780}).resize(600,600).png().toBuffer();
+  const b=results.find(result=>result.team===id&&result.viewport===1440).bounds;
+  const input=await sharp(path.join(out,`1440-${id}.png`)).extract({left:Math.max(0,Math.floor(b.x)-10),top:Math.max(0,Math.floor(b.y-b.height*.23)),width:Math.ceil(b.width)+20,height:Math.ceil(b.height*1.23)+10}).resize(600,600,{fit:'contain',background:'#101424'}).png().toBuffer();
   await fs.writeFile(path.join(out,`board-${id}.png`),input);return input;
  }));
  await sharp({create:{width:1800,height:390,channels:4,background:'#101424'}}).composite(await Promise.all(crops.map(async(input,i)=>({input:await sharp(input).resize(350,350).png().toBuffer(),left:15+i*358,top:20})))).png().toFile(path.join(out,'five-frames-contact-sheet.png'));

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+ <defs>
+  <linearGradient id="metal" x2=".8" y2="1"><stop stop-color="#f4f9ff"/><stop offset=".18" stop-color="#bccada"/><stop offset=".5" stop-color="#627b96"/><stop offset=".65" stop-color="#cedce8"/><stop offset="1" stop-color="#334b63"/></linearGradient>
+  <linearGradient id="black" x2="1" y2="1"><stop stop-color="#243c50"/><stop offset="1" stop-color="#09141f"/></linearGradient>
+ </defs>
+ <!-- 切角分体金属板，内侧留空。 -->
+ <path d="M88 25H888L975 112V916L916 975H74L25 926V88Z M104 90L90 104V896L104 910H896L910 896V104L896 90Z" fill="url(#black)" fill-rule="evenodd" stroke="#6d91ae" stroke-width="2"/>
+ <path d="M88 25H530L500 56H86L56 86V370L25 398V88Z M975 112V573L946 602V124L874 54H642L670 25H888Z M975 916L916 975H519L548 946H904L946 904V681L975 650Z M74 975L25 926V501L55 472V911L89 945H365L396 975Z" fill="url(#metal)"/>
+ <path d="M104 90H802M90 104V819M910 178V896M198 910H896" fill="none" stroke="#a1dfff" stroke-width="2" opacity=".85"/>
+ <!-- 一条长判定线、错位短条和非对称粉色签条。 -->
+ <path d="M154 71H729" stroke="#ffec9e" stroke-width="5"/>
+ <path d="M701 62H833M116 930H298M67 187V254M936 729V827" stroke="#a7dfff" stroke-width="7"/>
+ <path d="M706 29H833L812 50H685Z" fill="#e872a2"/>
+ <path d="M932 149L954 171V236L932 214Z" fill="#e872a2"/>
+ <g fill="#192a3a" stroke="#a5bdcf" stroke-width="2"><circle cx="76" cy="76" r="8"/><circle cx="921" cy="110" r="8"/><circle cx="926" cy="926" r="8"/><circle cx="76" cy="918" r="8"/></g>
+ <g stroke="#c1d7e4" stroke-width="2"><path d="M71 76H81M916 110H926M921 926H931M71 918H81"/></g>
+ <g fill="#7099b4"><path d="M34 426L48 412V425L34 439Z M34 450L48 436V449L34 463Z M952 623L966 609V622L952 636Z"/><path d="M416 947H430L417 960H403Z M445 947H459L446 960H432Z"/></g>
+ <path d="M877 45L938 106M40 898L90 948" stroke="#ffffff" stroke-width="2" opacity=".65"/>
+</svg>

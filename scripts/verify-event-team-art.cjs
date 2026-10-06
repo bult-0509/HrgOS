@@ -33,7 +33,9 @@ const sharp=require('C:/Users/24175/.cache/codex-runtimes/codex-primary-runtime/
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'页面横向溢出');
   const rect=await page.locator('.cell').first().boundingBox();assert(rect.width>=44,`点击宽度 ${rect.width}`);assert(rect.height>=44,`点击高度 ${rect.height}`);
   const grid=await page.locator('.board-grid').boundingBox(),mascot=await page.locator('.team-mascot').boundingBox();
-  assert(mascot.x>=grid.x+grid.width||mascot.y+mascot.height<=grid.y,'角色覆盖任务点击区域');
+  assert(mascot.x<grid.x&&mascot.y<grid.y,'角色不在棋盘左上方');
+  assert(await page.evaluate(()=>Number(getComputedStyle(document.querySelector('.team-mascot')).zIndex)<Number(getComputedStyle(document.querySelector('.board-shell')).zIndex)),'角色必须在棋盘壳体下面');
+  assert.equal(await page.locator('.team-mascot').evaluate(img=>getComputedStyle(img).pointerEvents),'none');
   assert.equal(await page.locator('.edge-art').evaluate(img=>getComputedStyle(img).pointerEvents),'none');
   await page.screenshot({path:path.join(out,`viewport-${viewport.width}.png`),fullPage:true});mobileResults.push({...viewport,cell:rect});
  }

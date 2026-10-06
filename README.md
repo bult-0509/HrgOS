@@ -5,6 +5,7 @@
 ## 最近对话产物
 
 - 五队 Bingo 美术、独立边框和审阅页：`previews/team-bingo-event-v3/`，设计记录位于 `design-system/hrg-game/pages/`。
+- 五套美术已接入玩家页面与正式比赛界面（`/?live=cards`），共用 `src/player/TeamBingo.tsx`；角色、独立边框放在 `public/images/team-bingo/`。队娘位于棋盘左上方、棋盘底板之下，不覆盖任务点击区域。任务说明和清晰图仍只能点格子查看。
 - 活动公示及规则海报：`previews/hrg-event-announcement/`、`previews/hrg-event-announcement-v2/`、`previews/hrg-rules-poster/`；项目根目录包含两张成品海报。
 - 图寻原图、评估、处理方案和三个区域共 57 张成品：`outputs/photo-review-20261006/`、`outputs/photo-styles-review-20261006/`、`outputs/photo-final-20261006/`；根目录拍摄地点表保留原始标注。前端使用 `public/images/photo-clues/` 的交付素材。
 - 125 项挑战的最新命名版：[HRG挑战任务汇总_任务命名版.xlsx](outputs/task-integration-20261006/HRG挑战任务汇总_任务命名版.xlsx)，同目录保留来源、难度调整、构建脚本和历史版本。
@@ -73,4 +74,6 @@ npm run test:lab
 
 新增后端用于独立测试赛局，包含服务端鉴权、事务、媒体访问控制、定位与 WebSocket 同步。正式玩家/工作人员页面目前仍使用前端原型，接入该页面、生产对象存储和真实 Web Push 仍需继续实现；异地部署成功不能替代这些验收。
 
-区域审核当前由 `src/domain/regionProgress.ts` 的前端原型 reducer 演示，PlayerApp 只读接收 `approvedRegionId`。这不等于真实后端授权或跨设备同步；生产实现需在服务端事务中审核、留痕，并向本队推送区域状态。独立美术预览只显示区域 02 快照，不提供区域切换。
+演示页面的区域审核由 `src/domain/regionProgress.ts` 的 reducer 演示，PlayerApp 只读接收 `approvedRegionId`。正式比赛界面从服务器取得本队已批准的 `regionId`，提交到达证据不会立即换区，工作人员审核通过后才统一更新 19 张图。独立美术预览只显示区域 02 快照，不提供区域切换。
+
+棋盘美术与正式提交入口的本机浏览器验证：`node scripts/verify-bingo-integration.cjs`，覆盖五队、两套页面、五种屏幕尺寸、图层顺序、装饰与点击区域、清晰图弹窗、提交失败保留草稿及审核换区。该验证拦截 API，不会操作真实比赛；截图及报告位于 `artifacts/bingo-integration-20261007/`（不提交仓库）。

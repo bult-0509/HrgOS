@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+ <defs>
+  <linearGradient id="ivory" x2="1" y2="1"><stop stop-color="#fffdf7"/><stop offset=".4" stop-color="#d5c9ea"/><stop offset=".65" stop-color="#fffdfb"/><stop offset="1" stop-color="#887eaf"/></linearGradient>
+  <linearGradient id="glass" x2=".7" y2="1"><stop stop-color="#eefcff" stop-opacity=".95"/><stop offset=".45" stop-color="#adb6f5" stop-opacity=".45"/><stop offset="1" stop-color="#edc3ff" stop-opacity=".8"/></linearGradient>
+ </defs>
+ <!-- 轻薄白色拱框：断开的弧形外缘，不是金属直角壳。 -->
+ <path d="M146 58H854Q942 58 942 146V854Q942 942 854 942H146Q58 942 58 854V146Q58 58 146 58Z M147 89Q89 89 89 147V853Q89 911 147 911H853Q911 911 911 853V147Q911 89 853 89Z" fill="url(#ivory)" fill-rule="evenodd"/>
+ <path d="M192 73H808M927 210V790M808 927H192M73 790V210" stroke="#ffffff" stroke-width="2" opacity=".85" fill="none"/>
+ <path d="M195 42H380M620 958H805M42 620V805M958 195V380" stroke="#a7a1d2" stroke-width="2" opacity=".65" fill="none"/>
+ <!-- 冰透碎片仅生长在四角，主棋盘不被遮挡。 -->
+ <g fill="url(#glass)" stroke="#edf4ff" stroke-width="2">
+  <path d="M30 75L58 18L86 74L59 105Z"/><path d="M80 25L140 48L95 80Z"/>
+  <path d="M878 27L950 50L916 89Z"/><path d="M950 50L979 117L937 100Z"/>
+  <path d="M919 914L963 941L937 983L908 950Z"/><path d="M873 940L908 950L864 982Z"/>
+  <path d="M24 901L68 919L52 969L20 945Z"/><path d="M72 940L119 973L68 982Z"/>
+ </g>
+ <g fill="none" stroke="#ffffff" stroke-width="1.5" opacity=".8"><path d="M59 20V104M31 75H85M879 28L937 100L950 51M920 915L938 982M25 902L51 968"/></g>
+ <!-- 光光帽饰的红色，作为一处小挂带而非满框粉色。 -->
+ <path d="M914 220Q957 235 948 269L929 294L934 257L917 255L903 279L909 245Z" fill="#dc759e" stroke="#facada" stroke-width="2"/>
+ <circle cx="918" cy="241" r="9" fill="#f4e3ed"/>
+ <g fill="#f5efff"><path d="M51 334L57 348L71 354L57 360L51 374L45 360L31 354L45 348Z"/><path d="M756 942L761 953L772 958L761 963L756 974L751 963L740 958L751 953Z"/></g>
+ <g fill="#ccc4f4"><circle cx="41" cy="471" r="3"/><circle cx="962" cy="561" r="4"/><circle cx="396" cy="965" r="3"/></g>
+</svg>

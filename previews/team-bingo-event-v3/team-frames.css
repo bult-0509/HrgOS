@@ -36,3 +36,12 @@
  .region-step{min-width:36px;min-height:36px;font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){.board-scene.is-entering .edge-art{animation:none}}
+/* 队娘坐落在棋盘左上方，整个棋盘壳体压在角色前面。 */
+.board-scene{margin-right:0}
+.board-shell{z-index:1}
+.team-mascot{left:0;right:auto;top:-23%;bottom:auto;width:32%;height:43%;z-index:0}
+.mascot-plinth{display:none}
+.event-stage{padding-top:175px}
+@media(min-width:701px) and (max-width:1050px){.board-scene{width:min(86vw,760px);margin-right:0}.event-stage{padding-top:150px}}
+@media(max-width:700px){.event-stage{padding-top:min(26vw,128px)}}
+@media(max-height:500px) and (min-width:701px){.board-scene{margin-right:0}.event-stage{padding-top:100px}}

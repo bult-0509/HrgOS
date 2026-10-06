@@ -43,7 +43,7 @@ const fs=require('node:fs/promises'),path=require('node:path'),assert=require('n
   await page.locator('#test-mode').click();await page.locator('.bingo-cell').first().waitFor();
   const urls=await page.locator('.photo-preview__base').evaluateAll(imgs=>imgs.map(i=>i.src));
   assert.equal(urls.length,19);assert(urls.every(s=>s.includes('/region-3/')));assert.deepEqual(await fingerprint(),before);
-  await page.locator('.bingo-cell--photo').filter({has:page.locator('.bingo-cell__number',{hasText:/^#1$/})}).click();
+  await page.locator('.bingo-cell--photo[data-slot=P01]').click();
   assert((await page.locator('.task-photo img').getAttribute('src')).includes('/region-3/01.webp'));
   await page.keyboard.press('Escape');await page.locator('[role=dialog]').waitFor({state:'hidden'});
   await page.screenshot({path:path.join(out,'after-staff-approval.png'),fullPage:true});

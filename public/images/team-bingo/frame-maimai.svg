@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+ <defs>
+  <linearGradient id="plastic" x2=".8" y2="1"><stop stop-color="#fffaff"/><stop offset=".28" stop-color="#cfd3eb"/><stop offset=".55" stop-color="#fff8ff"/><stop offset="1" stop-color="#9796c3"/></linearGradient>
+  <linearGradient id="bezel" x2="1" y2="1"><stop stop-color="#eabaf2"/><stop offset=".5" stop-color="#92e2e9"/><stop offset="1" stop-color="#dac0ff"/></linearGradient>
+ </defs>
+ <!-- 圆角街机塑料壳，外圈八个独立按键。 -->
+ <path d="M152 24H848Q976 24 976 152V848Q976 976 848 976H152Q24 976 24 848V152Q24 24 152 24Z M133 89Q89 89 89 133V867Q89 911 133 911H867Q911 911 911 867V133Q911 89 867 89Z" fill="url(#plastic)" fill-rule="evenodd" stroke="#fff6ff" stroke-width="3"/>
+ <path d="M145 82H855Q918 82 918 145V855Q918 918 855 918H145Q82 918 82 855V145Q82 82 145 82Z" fill="none" stroke="url(#bezel)" stroke-width="8"/>
+ <path d="M174 40H406M594 960H826M40 594V826M960 174V406" stroke="#fff" stroke-width="3" fill="none" opacity=".65"/>
+ <g stroke="#737197" stroke-width="5">
+  <circle cx="60" cy="220" r="26" fill="#edabeb"/><circle cx="60" cy="780" r="26" fill="#c0b0ff"/>
+  <circle cx="220" cy="60" r="26" fill="#b7a8fc"/><circle cx="780" cy="60" r="26" fill="#9ee9ea"/>
+  <circle cx="940" cy="220" r="26" fill="#a2e3f2"/><circle cx="940" cy="780" r="26" fill="#fee0a3"/>
+  <circle cx="780" cy="940" r="26" fill="#ffb4c8"/><circle cx="220" cy="940" r="26" fill="#aee4d2"/>
+ </g>
+ <g fill="none" stroke="#fff" stroke-width="3" opacity=".75">
+  <path d="M44 219A16 16 0 0 1 61 204M44 779A16 16 0 0 1 61 764M204 59A16 16 0 0 1 221 44M764 59A16 16 0 0 1 781 44M924 219A16 16 0 0 1 941 204M924 779A16 16 0 0 1 941 764M764 939A16 16 0 0 1 781 924M204 939A16 16 0 0 1 221 924"/>
+ </g>
+ <!-- 猫耳角扣呼应莎露朵；不把机台圆环硬套在方形棋盘外。 -->
+ <path d="M58 99L54 29L105 62Z M903 63L950 27L946 99Z" fill="#c4b7ea" stroke="#fbf4ff" stroke-width="5"/>
+ <path d="M66 76L64 48L88 64Z M921 65L938 47L937 78Z" fill="#f2bee1"/>
+ <g fill="#fff2bf" stroke="#a59abf" stroke-width="2"><path d="M64 903L72 923L94 924L77 938L82 958L64 947L46 958L51 938L34 924L56 923Z"/><path d="M936 48L941 61L955 62L944 71L948 85L936 77L924 85L928 71L917 62L931 61Z"/></g>
+ <g fill="#686b91"><rect x="449" y="46" width="102" height="25" rx="12"/><rect x="449" y="929" width="102" height="25" rx="12"/></g>
+ <g fill="#dff9f9"><circle cx="477" cy="58" r="4"/><circle cx="500" cy="58" r="4"/><circle cx="523" cy="58" r="4"/></g>
+</svg>

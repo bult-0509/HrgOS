@@ -18,7 +18,7 @@ const fs=require('node:fs/promises'),path=require('node:path'),assert=require('n
    assert.equal(await page.locator('.bingo-cell__focus').count(),0);assert.equal(await page.locator('.task-photo').count(),0);
    const srcs=await page.locator('.photo-preview__base').evaluateAll(imgs=>imgs.map(img=>img.getAttribute('src')));assert.equal(new Set(srcs).size,19);
    for(let n=1;n<=19;n++){assert(srcs.includes(`/images/photo-clues/region-${r}/${String(n).padStart(2,'0')}-preview.webp`));const result=await page.request.get(`http://127.0.0.1:3000/images/photo-clues/region-${r}/${String(n).padStart(2,'0')}.webp`);assert.equal(result.status(),200);}
-   await page.locator('.bingo-cell--photo').filter({has:page.locator('.bingo-cell__number',{hasText:/^#1$/})}).click();
+   await page.locator('.bingo-cell--photo[data-slot=P01]').click();
    await page.locator('.task-photo img').evaluate(img=>img.decode());assert((await page.locator('.task-photo img').getAttribute('src')).includes(`region-${r}/01.webp`));assert.equal(await page.locator('.task-photo img').evaluate(img=>getComputedStyle(img).filter),'none');
    await page.locator('.modal-card').evaluate(async e=>{await Promise.all(e.getAnimations().map(a=>a.finished));});
    await page.screenshot({path:path.join(out,`clear-region-${r}.png`)});
@@ -26,7 +26,7 @@ const fs=require('node:fs/promises'),path=require('node:path'),assert=require('n
    await page.keyboard.press('Escape');await page.locator('[role=dialog]').waitFor({state:'hidden'});
   }
   assert.equal(await page.locator('.bingo-panel').getByText('同步判定',{exact:true}).count(),0);
-  await page.getByRole('button',{name:'暂停动效',exact:true}).click();assert(await page.locator('.player-console').evaluate(e=>e.classList.contains('photo-motion-paused')));
+  await page.getByRole('button',{name:'暂停动效',exact:true}).click();assert(await page.locator('.team-bingo').evaluate(e=>e.classList.contains('photo-motion-paused')));
   await page.getByRole('button',{name:'开启动效',exact:true}).click();
   await page.locator('.bingo-cell--photo').first().hover();const blur=await page.locator('.photo-preview__base').first().evaluate(e=>getComputedStyle(e).filter);assert(blur.includes('blur(7px)'));
   await page.screenshot({path:path.join(out,'desktop.png'),fullPage:true});

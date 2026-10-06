@@ -29,7 +29,8 @@ describe('玩家照片棋盘', () => {
   });
   it('区域进度为只读标记，玩家没有区域切换按钮', () => {
     const html=markup('stage-b');
-    const indicators=html.match(/<ol class="bingo-regions"[\s\S]*?<\/ol>/)?.[0];
+    const indicators=html.match(/<ol class="bingo-regions[^\"]*"[\s\S]*?<\/ol>/)?.[0];
+    expect(indicators).toBeDefined();
     expect(indicators).not.toContain('<button');
     expect(indicators).toContain('aria-current="step"');
     expect(indicators).toContain('待工作人员审核');

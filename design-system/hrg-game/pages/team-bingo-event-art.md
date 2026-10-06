@@ -1,6 +1,6 @@
 # 五队 Bingo 美术预览覆盖规则
 
-范围仅限 `previews/team-bingo-event-v3`，不覆盖正式赛事控制台设计、登录流程和权限规则。
+范围包括 `previews/team-bingo-event-v3` 与玩家页面的共享棋盘美术；不更改登录流程、工作人员权限或后端赛事规则。
 
 - 五队为 Phigros、Arcaea、范式起源、maimai、全能；对应鸠、光光、Para、莎露朵、伊洛。全能队角色由用户指定为伊洛。
 - 五队的边缘必须独立设计，不能共用同一轮廓只替换颜色。保留统一二头身角色、深色棋盘和阿里妈妈方圆体。
@@ -28,3 +28,11 @@ UI/UX 技能检索结果的娱乐类高对比、统一视觉和 reduced-motion �
 - 游戏参考入口：[Phigros 开发者商店页](https://play.google.com/store/apps/details?id=com.PigeonGames.Phigros)、[Arcaea](https://arcaea.lowiro.com/en)、[maimai](https://maimai.sega.jp/)、[范式起源官方论坛](https://www.taptap.cn/app/203917/topic?sort=created&type=official)。上面的边缘主题是本项目原创设计判断，不声称是官方 UI 或官方授权资产。
 - 验证脚本 `scripts/verify-team-frames.cjs`：5 队 × 4 视口，任务格尺寸、边框逐像素避让、点击命中、详情焦点返回、减少动态与资源错误检查。
 - 并排审阅：`previews/team-bingo-event-v3/frame-review.html`。
+
+## 2026-10-07 左上角色与前端整合
+
+- 队娘移至棋盘左上，层级依次为角色、非透明底板、边框、任务内芯。角色下半身被棋盘遮住，露出头部和上半身；装饰不接受点击。
+- 演示玩家页面及接通后端的 `AbilityApp` 共用 `src/player/TeamBingo.tsx`。五队按稳定队伍 ID 配角色和独立框，不允许正式玩家浏览其他队的棋盘。
+- 发布资产独立存放于 `public/images/team-bingo/`，保留预览和原始素材。阿里妈妈方圆体沿用本地字体。
+- 正式任务只在点格子后显示标题、要求、清晰图及提交表单；后台未批准区域不猜图，提交入口不提前换区，审批后的 19 张图统一更新。上传失败保留草稿。
+- `scripts/verify-bingo-integration.cjs` 覆盖五队 × 演示/正式界面 × 五种屏幕尺寸，包括 320px 手机、平板、桌面与横屏。检查至少 44×44px 的任务格、零横向溢出、图层和点击命中、边框像素避让、动效暂停和减少动态。正式界面验证拦截 API，不改真实比赛。

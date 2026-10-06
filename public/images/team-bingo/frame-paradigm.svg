@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+ <defs>
+  <linearGradient id="case" x2="1" y2="1"><stop stop-color="#606a9a"/><stop offset=".28" stop-color="#283555"/><stop offset="1" stop-color="#101c34"/></linearGradient>
+  <linearGradient id="face" x2="1" y2=".5"><stop stop-color="#8994c8"/><stop offset=".5" stop-color="#c4cae3"/><stop offset="1" stop-color="#5c6694"/></linearGradient>
+ </defs>
+ <!-- 深度舱体：两层挤出面和四个厚实模块，内芯仍为同一 5×5。 -->
+ <path d="M55 21H910L979 90V944L944 979H90L21 910V55Z M106 90H894L910 106V894L894 910H106L90 894V106Z" fill="url(#case)" fill-rule="evenodd" stroke="#8b96c6" stroke-width="2"/>
+ <path d="M55 21H910L940 51H67L51 67V940L21 910V55Z" fill="url(#face)"/>
+ <path d="M940 51L979 90V944L944 979H90L51 940H929L940 929Z" fill="#10192c" stroke="#495680" stroke-width="2"/>
+ <path d="M102 89H894L911 106V894L894 911H106L89 894V106Z" fill="none" stroke="#8a9eff" stroke-width="3"/>
+ <!-- 立方体角模块。 -->
+ <g stroke="#bdc6ea" stroke-width="2"><path d="M29 57L58 28L87 57L58 87Z" fill="#aaa6df"/><path d="M29 57V84L58 112V87Z" fill="#313456"/><path d="M58 87L87 57V84L58 112Z" fill="#536789"/></g>
+ <path d="M920 920L946 896L971 920L946 945Z" fill="#b5c5dd" stroke="#d1dcf2" stroke-width="2"/><path d="M920 920V946L946 973V945Z" fill="#374a71"/><path d="M946 945L971 920V947L946 973Z" fill="#657296"/>
+ <!-- Para 双色接口，以及四侧橙色锁扣。 -->
+ <g fill="#ba9bff" stroke="#e9dfff" stroke-width="2"><path d="M158 44H294V77H158Z"/><path d="M43 718H77V846H43Z"/></g>
+ <g fill="#88e6ef" stroke="#deffff" stroke-width="2"><path d="M706 923H841V956H706Z"/><path d="M923 154H956V281H923Z"/></g>
+ <g fill="#ffad70" stroke="#493647" stroke-width="4"><rect x="465" y="28" width="70" height="54" rx="5"/><rect x="918" y="465" width="54" height="70" rx="5"/><rect x="465" y="918" width="70" height="54" rx="5"/><rect x="28" y="465" width="54" height="70" rx="5"/></g>
+ <g stroke="#593e49" stroke-width="3"><path d="M481 45H519M481 63H519M937 481V519M954 481V519M481 937H519M481 954H519M45 481V519M63 481V519"/></g>
+ <g stroke="#576789" stroke-width="3"><path d="M331 50H413M331 64H392M588 935H670M609 949H670M50 331V413M64 331V392M935 588V670M949 609V670"/></g>
+</svg>

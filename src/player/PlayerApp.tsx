@@ -22,8 +22,8 @@ import {
 } from "lucide-react";
 import type { GameCard, GameMessage, Task, TeamStatus } from "../types";
 import { Modal, StatusChip } from "../components/ui";
-import { bingoSlots, getPhotoClue, photoRegions } from '../data/photoClues';
-import { PhotoPreview } from './PhotoPreview';
+import { getPhotoClue, photoRegions } from '../data/photoClues';
+import { TeamBingo } from './TeamBingo';
 import { teams } from '../data/mock';
 
 interface PlayerAppProps {
@@ -63,16 +63,13 @@ export function PlayerApp({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cardTarget, setCardTarget] = useState(() => teams.find(candidate => candidate.id !== team.id)!.name);
   const [showMessages, setShowMessages] = useState(false);
-  const [motionEnabled, setMotionEnabled] = useState(true);
   const [pageVisible, setPageVisible] = useState(true);
   const region = photoRegions.find(item => item.id === approvedRegionId);
   const regionId = region?.id ?? '';
   const currentTasks = useMemo(() => tasks, [tasks]);
   const selectedPhoto = selectedTask ? getPhotoClue(regionId, selectedTask.sharedSlot ?? '') : null;
-  const motionPaused = !motionEnabled || !pageVisible || Boolean(selectedTask || selectedCard || showMessages || playingCard);
+  const motionPaused = !pageVisible || Boolean(selectedTask || selectedCard || showMessages || playingCard);
   const unreadCount = messages.filter((message) => message.unread).length;
-  const completedCount = currentTasks.filter((task) => task.state === "awarded").length;
-  const pendingCount = currentTasks.filter((task) => task.state === "pending").length;
 
   // 推进地区不替换任务集合，也不清空得分。关闭旧地区上传草稿，避免错交旧图。
   useEffect(() => {
@@ -137,54 +134,21 @@ export function PlayerApp({
 
       <main className="player-game-layout" id="main-content" tabIndex={-1}>
         <div className="mission-column">
-          <section className="bingo-panel" aria-labelledby="bingo-title">
-            <div className="bingo-panel__header">
-              <div>
-                <p className="eyebrow">STAGE {region?.letter ?? '—'} · BINGO 5×5</p>
-                <h1 id="bingo-title"><span>{region?.letter ?? '—'}</span> 任务矩阵</h1>
-                <p>点开格子看清晰图与任务。19 张图寻 · 6 项直接任务。</p>
-              </div>
-              <div className="bingo-summary" aria-label="本队棋盘任务进度，换区后保留">
-                <span><b>{completedCount}</b> 已得分</span>
-                <span><b>{pendingCount}</b> 审核中</span>
-                <span><b>{currentTasks.length}</b> 格任务</span>
-              </div>
-            </div>
-
-            <div className="bingo-toolbar">
-              <ol className="bingo-regions" aria-label="本队区域进度，只能由工作人员审核推进">
-                {photoRegions.map(item => <li key={item.id} className={regionId === item.id ? 'is-current' : (region && item.number < region.number ? 'is-passed' : 'is-locked')} aria-current={regionId === item.id ? 'step' : undefined} aria-label={`${item.name}，${regionId === item.id ? '当前区域' : region && item.number < region.number ? '已通过' : '待工作人员审核'}`}><span>{item.number}</span>{item.name}{!region || item.number > region.number ? <LockKeyhole size={13} aria-hidden="true" /> : null}</li>)}
-              </ol>
-              <button className="photo-motion-toggle" type="button" aria-pressed={!motionEnabled} onClick={() => setMotionEnabled(enabled => !enabled)}>{motionEnabled ? '暂停动效' : '开启动效'}</button>
-            </div>
-
-            <p className="region-rule-note" role="status">{region ? `当前：${region.name}。下一地区入口经工作人员审核通过后，本队图寻图片统一更新。` : '等待工作人员审核区域入口，尚未开放图寻图片。'}</p>
-            <div className="bingo-board bingo-board--photos" role="group" aria-label={`${region?.name ?? '待区域审核'} 5乘5任务棋盘`}>
-              {currentTasks.map((task, index) => {
-                const slot = task.sharedSlot ?? bingoSlots[index];
-                const photo = getPhotoClue(regionId, slot);
-                const stateLabel = task.state === 'pending' ? '审核中' : task.state === 'awarded' ? '已有归属' : task.state === 'locked' ? '未解锁' : task.configured === false ? '待配置' : '可提交';
-                return (
-                <button
-                  className={`bingo-cell bingo-cell--${task.state} ${task.imageTone} ${photo ? 'bingo-cell--photo' : 'bingo-cell--direct'}`}
-                  key={task.id}
-                  onClick={() => setSelectedTask(task)}
-                  style={{ '--cell-order': index } as CSSProperties}
-                  aria-label={`第 ${index + 1} 格，${photo ? `图寻图片 #${photo.number}` : '无需图寻'}，${stateLabel}，打开任务详情`}
-                >
-                  {photo ? <PhotoPreview key={photo.preview} photo={photo} order={index} /> : <span className="bingo-cell__direct-art" aria-hidden="true">{slot.startsWith('P') ? <LockKeyhole size={24} /> : <Zap size={24} />}</span>}
-                  <span className="bingo-cell__number">{photo ? `#${photo.number}` : slot}</span>
-                  <span className="bingo-cell__open" aria-hidden="true">{photo ? '图寻' : '直接'}<ChevronRight size={13} /></span>
-                  <span className="bingo-cell__footer">
-                    {task.configured === false ? <small>待配置</small> : <span><b>{task.points}</b> 分</span>}
-                    <i>{task.state === 'pending' ? `${task.pendingCount ?? 1} 队审核中` : task.state === 'awarded' ? '已有归属' : task.state === 'locked' ? '未解锁' : '查看'}</i>
-                  </span>
-                  {task.state === "pending" ? <span className="bingo-cell__state"><Clock3 size={15} aria-hidden="true" /></span> : null}
-                  {task.state === "awarded" ? <span className="bingo-cell__state"><Check size={15} aria-hidden="true" /></span> : null}
-                </button>
-                );
-              })}
-            </div>
+          <section className="bingo-panel bingo-panel--themed" aria-label="任务栏">
+            <TeamBingo
+              teamId={team.id}
+              teamName={team.name}
+              approvedRegionId={approvedRegionId}
+              paused={motionPaused}
+              items={currentTasks.map(task => ({
+                id: task.id,
+                slot: task.sharedSlot,
+                points: task.configured === false ? undefined : task.points,
+                state: task.configured === false ? 'unconfigured' : task.state,
+                pendingCount: task.pendingCount
+              }))}
+              onSelect={id => setSelectedTask(currentTasks.find(task => task.id === id) ?? null)}
+            />
           </section>
 
           <section className="hand-section" aria-labelledby="hand-title">
