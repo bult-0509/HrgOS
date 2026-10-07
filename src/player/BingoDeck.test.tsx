@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { BingoDeck } from './BingoDeck';
 
 describe('共享 Bingo 切换入口', () => {
-  it('只显示上一张和下一张两个切换按钮，不再显示底部五队入口', () => {
+  it('只用两个箭头切换，主棋盘及两侧预览不展示看板娘', () => {
     const html = renderToStaticMarkup(<BingoDeck
       actorTeamId="team-1" approvedRegionId="stage-a" onSelect={() => {}}
       boards={Array.from({ length: 5 }, (_, index) => ({ id: `team-${index + 1}`, name: `队伍${index + 1}`, items: [] }))}
@@ -14,5 +14,7 @@ describe('共享 Bingo 切换入口', () => {
     expect(controls).toContain('aria-label="下一张 Bingo"');
     expect(controls).not.toContain('队伍1');
     expect(controls).not.toContain('<img');
+    expect(html).not.toMatch(/\/images\/team-bingo\/(?:geopelia|hikari|para|salt|iro)\.webp/);
+    expect(html).not.toContain('tb-mascot');
   });
 });

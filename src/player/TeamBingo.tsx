@@ -51,7 +51,6 @@ export function TeamBingo({teamId,teamName,approvedRegionId,items,onSelect,pause
   return <section className={`team-bingo ${motionPaused?'photo-motion-paused tb-paused':''}`} data-bingo-theme={theme?.id??'neutral'} style={style} aria-label={`${teamName} Bingo`}>
     <h2 className="sr-only">{teamName} 5×5任务棋盘</h2>
     <div className="tb-stage">
-      {theme ? <img className="tb-mascot" src={`${root}${theme.mascot}.webp`} alt={`${teamName}队娘${theme.character}`} width="700" height="700" decoding="async" /> : null}
       <div className="tb-board-surface" aria-hidden="true" />
       {theme ? <img className="tb-frame" src={`${root}frame-${theme.id}.svg`} alt="" aria-hidden="true" width="1000" height="1000" /> : null}
       <div className="tb-core">

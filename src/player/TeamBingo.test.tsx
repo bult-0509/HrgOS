@@ -9,14 +9,14 @@ const items = bingoSlots.map((slot, index) => ({ id: `T${index + 1}`, slot, stat
 const markup = (teamId: string, regionId: string | null) => renderToStaticMarkup(<TeamBingo teamId={teamId} teamName="本队" approvedRegionId={regionId} items={items} onSelect={() => {}} />);
 
 describe('共享队伍棋盘美术', () => {
-  it('五队分别使用自己的角色和独立边框，角色 DOM 在棋盘底板之前', () => {
+  it('五队保留独立边框与棋盘，不再展示看板娘', () => {
     const frames = new Set<string>();
     for (const [teamId, theme] of Object.entries(teamBingoThemes)) {
       const html = markup(teamId, 'stage-b');
       expect(html).toContain(`data-bingo-theme="${theme.id}"`);
-      expect(html).toContain(`/images/team-bingo/${theme.mascot}.webp`);
+      expect(html).not.toContain(`/images/team-bingo/${theme.mascot}.webp`);
       expect(html).toContain(`/images/team-bingo/frame-${theme.id}.svg`);
-      expect(html.indexOf('class="tb-mascot"')).toBeLessThan(html.indexOf('class="tb-board-surface"'));
+      expect(html).not.toContain('队娘');
       frames.add(theme.id);
     }
     expect(frames.size).toBe(5);

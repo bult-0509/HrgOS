@@ -68,7 +68,6 @@ export function BingoDeck({ boards, actorTeamId, approvedRegionId, paused = fals
           {offset === 0 ? <TeamBingo teamId={board.id} teamName={board.name} approvedRegionId={approvedRegionId} items={board.items} onSelect={onSelect} paused={paused} motionEnabled={motionEnabled} onToggleMotion={() => setMotionEnabled(value => !value)} /> : <>
             <div className="team-bingo bingo-peek" data-bingo-theme={theme?.id} style={{ '--tb-surface': theme?.surface, '--tb-accent': theme?.accent } as CSSProperties} aria-hidden="true">
               <div className="tb-stage">
-                {theme ? <img className="tb-mascot" src={`${root}${theme.mascot}.webp`} alt="" width="700" height="700" decoding="async" /> : null}
                 <div className="tb-board-surface" />
                 {theme ? <img className="tb-frame" src={`${root}frame-${theme.id}.svg`} alt="" width="1000" height="1000" /> : null}
                 <div className="tb-core"><div className="bingo-peek__head">{String(index + 1).padStart(2, '0')} / {String(boards.length).padStart(2, '0')}</div><div className="bingo-peek__grid">{board.items.map((item, n) => {
