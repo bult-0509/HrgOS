@@ -13,6 +13,7 @@ export interface BingoItem {
   points?: number;
   difficulty?: '易' | '中' | '难' | '极难';
   photoStatus?: PhotoFindStatus;
+  completed?: boolean;
   state: 'available' | 'pending' | 'awarded' | 'locked' | 'unconfigured';
   pendingCount?: number;
 }
@@ -43,7 +44,7 @@ export function TeamBingo({teamId,teamName,approvedRegionId,items,onSelect,pause
     document.addEventListener('visibilitychange',update);return()=>document.removeEventListener('visibilitychange',update);
   },[]);
   const root=`${import.meta.env.BASE_URL}images/team-bingo/`;
-  const finished=items.filter(item=>item.state==='awarded').length;
+  const finished=items.filter(item=>item.completed||item.state==='awarded').length;
   const pending=items.filter(item=>item.state==='pending').length;
   const style={'--tb-accent':theme?.accent??'#bdc9db','--tb-surface':theme?.surface??'#182936'} as CSSProperties;
   const motionPaused=paused||!motionEnabled||!visible;
@@ -58,7 +59,7 @@ export function TeamBingo({teamId,teamName,approvedRegionId,items,onSelect,pause
           <ol className="bingo-regions tb-regions" aria-label="本队区域进度，只能由工作人员审核推进">
             {photoRegions.map(r=><li key={r.id} className={region?.id===r.id?'is-current':region&&r.number<region.number?'is-passed':'is-locked'} aria-current={region?.id===r.id?'step':undefined} aria-label={`${r.name}，${region?.id===r.id?'当前区域':region&&r.number<region.number?'已通过':'待工作人员审核'}`}><span>{String(r.number).padStart(2,'0')}</span>{!region||r.number>region.number?<LockKeyhole size={11} aria-hidden="true"/>:null}</li>)}
           </ol>
-          <span className="tb-progress" aria-label={`已计分 ${finished} 格，待审核 ${pending} 格，共 ${items.length} 格`}><Check size={15} aria-hidden="true"/><b>{String(finished).padStart(2,'0')}</b><span>/{items.length}</span></span>
+          <span className="tb-progress" aria-label={`已完成 ${finished} 格，待审核 ${pending} 格，共 ${items.length} 格`}><Check size={15} aria-hidden="true"/><b>{String(finished).padStart(2,'0')}</b><span>/{items.length}</span></span>
           <button className="tb-motion" type="button" aria-label={motionEnabled?'暂停动效':'开启动效'} aria-pressed={!motionEnabled} onClick={onToggleMotion??(()=>setMotionEnabled(v=>!v))}>{motionEnabled?<Pause size={15}/>:<Play size={15}/>}</button>
         </div>
         <p className="sr-only" role="status">{region?`当前：${region.name}。工作人员通过本队下一地区入口审核后，19 张图统一更新，任务和分数保留。`:'等待工作人员审核区域入口，尚未开放图寻图片。'}</p>
@@ -67,13 +68,12 @@ export function TeamBingo({teamId,teamName,approvedRegionId,items,onSelect,pause
             const slot=photoSlotFor(item,index);
             const photo=getPhotoClue(region?.id??'',slot??'');
             const isPhoto=slot?.startsWith('P');
-            const status=item.photoStatus==='pending'?'图寻审核中':item.state==='pending'?'任务审核中':item.state==='awarded'?'已有归属':item.state==='locked'?'任务未解锁':item.state==='unconfigured'?'待配置':'可提交';
-            return <button key={item.id} type="button" className={`bingo-cell bingo-cell--${item.state} ${isPhoto?'bingo-cell--photo':'bingo-cell--direct'} tb-cell`} data-task-id={item.id} data-slot={slot} data-difficulty={item.difficulty} data-photo-state={item.photoStatus} onClick={()=>onSelect(item.id)} style={{'--cell-order':index} as CSSProperties} aria-label={`第 ${index+1} 格，${isPhoto?`图寻图片 #${Number(slot?.slice(1))}`:'无需图寻'}，${item.difficulty ?? ''}，${item.points != null ? `${item.points}分，` : ''}${status}，${item.state==='locked'?'打开图寻图片':'打开任务详情'}`}>
-              {photo?<PhotoPreview key={photo.preview} photo={photo} order={index}/>:<span className="bingo-cell__direct-art" aria-hidden="true">{isPhoto?<LockKeyhole size={22}/>:<Zap size={22}/>}</span>}
-              <span className="bingo-cell__number">{isPhoto?'#':''}{String(Number(slot?.slice(1)??index+1)).padStart(2,'0')}</span>
+            const completed=!!item.completed||item.state==='awarded';
+            const status=completed?'任务已完成':item.photoStatus==='pending'?'图寻审核中':item.state==='pending'?'任务审核中':item.state==='locked'?'任务未解锁':item.state==='unconfigured'?'待配置':'可提交';
+            return <button key={item.id} type="button" className={`bingo-cell bingo-cell--${item.state} ${isPhoto?'bingo-cell--photo':'bingo-cell--direct'} tb-cell`} data-task-id={item.id} data-slot={slot} data-difficulty={item.difficulty} data-photo-state={item.photoStatus} data-completed={completed} onClick={()=>onSelect(item.id)} style={{'--cell-order':index} as CSSProperties} aria-label={`第 ${index+1} 格，${isPhoto?`图寻图片 #${Number(slot?.slice(1))}`:'无需图寻'}，${item.difficulty ?? ''}，${item.points != null ? `${item.points}分，` : ''}${status}，${item.state==='locked'?'打开图寻图片':'打开任务详情'}`}>
+              {photo?<PhotoPreview key={photo.preview} photo={photo} order={index}/>:isPhoto?<span className="bingo-cell__direct-art" aria-hidden="true"><LockKeyhole size={22}/></span>:null}
               <span className="bingo-cell__footer">{item.points!=null?<b>{item.points}</b>:<span aria-label="待配置">—</span>}</span>
-              {item.difficulty ? <span className="tb-difficulty" data-level={item.difficulty}>{item.difficulty}</span> : null}
-              {item.state==='pending'||item.state==='awarded'||item.state==='locked'?<span className="bingo-cell__state" aria-hidden="true">{item.state==='pending'||item.photoStatus==='pending'?<Clock3 size={12}/>:item.state==='awarded'?<Check size={12}/>:<LockKeyhole size={12}/>}</span>:null}
+              {completed||item.state==='pending'||item.state==='locked'?<span className="bingo-cell__state" aria-hidden="true">{completed?<Check size={12}/>:item.state==='pending'||item.photoStatus==='pending'?<Clock3 size={12}/>:<LockKeyhole size={12}/>}</span>:null}
             </button>;
           })}
         </div>

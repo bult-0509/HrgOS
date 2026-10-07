@@ -1,0 +1,21 @@
+{
+  "version": "hrg-20261007-roster17-proposal",
+  "status": "人数调整策划稿；未写入当前正式赛局",
+  "referenceTeamSize": 3,
+  "fourPlayerTaskCoefficient": 0.9,
+  "taskScorePrecision": 1,
+  "scalableEffortShareAssumption": 0.3,
+  "finishRewards": [1000, 750, 500, 300, 100],
+  "squatBasePenalty": 25,
+  "squatRepsPerMember": 20,
+  "squatPenaltyNormalization": "25 * 3 / 实际队伍人数",
+  "groundedFeetLimit": "落地脚数量 <= 实际队伍人数",
+  "fixedAbilityParticipants": 3,
+  "teams": [
+    {"id":"team-1","name":"Phigros队","members":["浮祇","森道天绫","半月荷","叶子林233"]},
+    {"id":"team-2","name":"Arcaea队","members":["幻影","王嘉睿","ForzxOL"]},
+    {"id":"team-3","name":"范式起源队","members":["XTM","Zénith Céleste","洛在在lzz"]},
+    {"id":"team-4","name":"maimai队","members":["Phony","灵均子美","Fidrop","萤川白"]},
+    {"id":"team-5","name":"全能队","members":["HeadphoneLine","椿烨","RS-圆愿"]}
+  ]
+}

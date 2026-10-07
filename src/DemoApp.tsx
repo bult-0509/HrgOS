@@ -4,6 +4,7 @@ import { WaitingScreen } from "./components/WaitingScreen";
 import type { LoginSession } from "./domain/loginAccess";
 import { initialAuditQueue, initialCards, initialMessages, teams as initialTeams } from "./data/mock";
 import { initialSharedBingoTasks } from './data/sharedBingoTasks';
+import { previewAbilityCards } from './data/abilityPreview';
 import { enqueueAuditItem } from "./domain/auditQueue";
 import { reviewAudit, type ReviewState } from './domain/regionProgress';
 import { canRevealTask } from './domain/photoFind';
@@ -108,8 +109,8 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
       {
         id: `M-${Date.now()}`,
         type: "card",
-        title: card.needsConfirmation ? "道具卡等待确认" : "道具卡已生效",
-        body: `“${card.name}”已对${target}使用。${card.needsConfirmation ? "工作人员确认后生效。" : "效果已写入活动账本。"}`,
+        title: "本地出牌预览",
+        body: `“${card.name}” → ${target}。此处仅模拟出牌，不修改正式比赛的积分、定位或卡牌库存。`,
         time: nowLabel(),
         unread: true
       },
@@ -117,7 +118,7 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
     ]);
     notify({
       tone: card.needsConfirmation ? "warning" : "success",
-      title: card.needsConfirmation ? "等待工作人员确认" : "道具卡已生效",
+      title: "本地出牌预览",
       body: `${card.name} → ${target}`
     });
   };
@@ -177,6 +178,7 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
           tasks={tasks}
           approvedRegionId={regionProgress[playerTeam.id]?.currentRegionId ?? null}
           cards={cards}
+          cardCatalog={previewAbilityCards}
           messages={messages}
           onLogout={onLogout}
           onSubmitTask={handleSubmitTask}

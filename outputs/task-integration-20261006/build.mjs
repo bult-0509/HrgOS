@@ -4,6 +4,167 @@ import { Workbook, SpreadsheetFile, FileBlob } from '@oai/artifact-tool';
 
 const dir = path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
 const outDir = decodeURIComponent(dir);
+if(process.argv.includes('--roster-adjust') || process.argv.includes('--review-roster')) {
+ const source=path.join(outDir,'HRG125项任务_正式积分与Bingo对应.xlsx');
+ const wb=await SpreadsheetFile.importXlsx(await FileBlob.load(source));
+ const main=wb.worksheets.getItem('任务总表'),policy=wb.worksheets.getItem('积分规则'),boards=wb.worksheets.getItem('Bingo对照'),photos=wb.worksheets.getItem('图片索引');
+ const original=main.getRange('A7:AD131').values;
+ const oldImages=photos.getRange('A7:G63').values;
+ if(process.argv.includes('--review-roster')) {
+  console.log((await wb.inspect({kind:'table',range:'积分规则!A17:H36',include:'values,formulas',tableMaxRows:20,tableMaxCols:8,maxChars:3000})).ndjson);
+  const png=await wb.render({sheetName:'积分规则',range:'A17:H36',format:'png',scale:1.1});await fs.writeFile(path.join(outDir,'roster-before.png'),new Uint8Array(await png.arrayBuffer()));
+  process.exit(0);
+ }
+ const input=JSON.parse(await fs.readFile(path.join(outDir,'roster-adjustment-inputs.json'),'utf8'));
+ const baseline=JSON.parse(await fs.readFile(path.join(outDir,'bingo-score-plan.json'),'utf8'));
+ const players=input.teams.flatMap(t=>t.members);
+ if(players.length!==17||new Set(players).size!==17||input.teams.length!==5)throw new Error('Roster validation');
+ const n=wb.worksheets.add('人数调整');n.showGridLines=false;n.tabColor='#527591';
+ n.getRange('A1:O90').format.font={name:'Microsoft YaHei',size:11,color:'#1F2937'};
+ n.getRange('A1:O90').format.verticalAlignment='center';
+ const band=(row,labels)=>{n.getRange(`A${row}`).write([labels]);const end=String.fromCharCode(64+labels.length);n.getRange(`A${row}:${end}${row}`).format={fill:'#284766',font:{name:'Microsoft YaHei',size:11,bold:true,color:'#FFFFFF'},wrapText:true,horizontalAlignment:'center',verticalAlignment:'center',rowHeight:42};};
+ const wide=(row,text,end='H',height=42)=>{n.getRange(`A${row}:${end}${row}`).merge();n.getRange(`A${row}`).values=[[text]];n.getRange(`A${row}:${end}${row}`).format.wrapText=true;n.getRange(`A${row}:${end}${row}`).format.rowHeight=height;};
+ n.getRange('A2:H2').merge();n.getRange('A2').values=[['17 人分组 · 人数校正与结算']];n.getRange('A2').format.font={name:'Microsoft YaHei',size:17,bold:true,color:'#284766'};n.getRange('A2:H2').format.rowHeight=34;
+ wide(4,'五队共17人：4／3／3／4／3。五张棋盘对所有队伍开放，按实际提交队伍校正TASK基础分；不会按所选棋盘主题决定系数。', 'H',36);
+ wide(5,'人数参数为新策划稿，尚未回写正式配置或正在运行的比赛。队员姓名仅作名单，不据此推断水平；来源为本轮用户提供的17人名单。','H',36);
+ band(7,['队伍','人数','TASK系数','每缺1次下蹲扣分','成员名单','下蹲全员零次最大罚分','跨棋盘15项最高基础实领','最多落地脚']);
+ input.teams.forEach((team,i)=>{
+  const row=8+i;
+  n.getRange(`A${row}:H${row}`).values=[[team.name,team.members.length,null,null,team.members.join('、'),null,null,null]];
+  n.getRange(`C${row}`).formulas=[[`=IF(B${row}=$B$17,1,IF(B${row}=4,$B$18,NA()))`]];
+  n.getRange(`D${row}`).formulas=[[`=$B$20*$B$17/B${row}`]];
+  n.getRange(`F${row}`).formulas=[[`=-B${row}*$B$21*D${row}`]];
+  n.getRange(`G${row}`).formulas=[[`=ROUND($B$26*C${row},$B$19)`]];
+  n.getRange(`H${row}`).formulas=[[`=B${row}`]];
+ });
+ n.getRange('A8:H12').format.wrapText=true;n.getRange('A8:H12').format.rowHeight=52;n.getRange('C8:C12').setNumberFormat('0.00');n.getRange('D8:D12').setNumberFormat('0.00');n.getRange('F8:G12').setNumberFormat('0;[Red](0);"—"');n.getRange('B8:B12').format.fill='#FFF2D8';
+ n.getRange('B8:B12').dataValidation={rule:{type:'list',values:['3','4']}};
+ n.getRange('A13:B13').values=[['总人数',null]];n.getRange('B13').formulas=[['=SUM(B8:B12)']];
+ band(16,['计算参数','数值','参数含义']);
+ n.getRange('A17:C28').values=[
+  ['基准队伍人数',input.referenceTeamSize,'所有人数敏感规则以3人队为参照。'],
+  ['四人队普通TASK系数',null,'从理论0.909取到一位小数为0.90；不乘完赛奖励或固定事件奖惩。'],
+  ['TASK保留小数位',input.taskScorePrecision,'逐笔四舍五入，不按整场总分二次乘系数。'],
+  ['三人队每少一次下蹲罚分',input.squatBasePenalty,'下蹲实扣=缺次×25×3/队伍人数；该系数独立于TASK系数。'],
+  ['每人要求下蹲次数',input.squatRepsPerMember,'全员实际参加；不通过挑3人规避全员要求。'],
+  ['可随人数扩展的效率份额',input.scalableEffortShareAssumption,'策划假设30%的效率受检索、分工、替补影响；不是实测成功率。'],
+  ['四人队未取整系数',null,'1 / (1 + 30% × (4/3−1))。对单人谱面不直接使用3/4的惩罚系数。'],
+  ['全部125项任务中位底分',null,'中位数只用于说明分差量级，不等于预计完成分。'],
+  ['跨棋盘最低15项底分',null,'忽略抢占、路线与成功率的低值组合边界。'],
+  ['跨棋盘最高15项底分',null,'忽略抢占、路线与成功率的高值组合边界。'],
+  ['第一名与第五名奖励差',null,'完赛名次奖励统一1000/750/500/300/100，不按人数缩放。'],
+  ['三人队TASK系数',1,'三人队逐笔按底分全额计入TASK账本。']
+ ];
+ n.getRange('B18').formulas=[['=ROUND(B23,1)']];n.getRange('B23').formulas=[['=1/(1+B22*(4/B17-1))']];n.getRange('B24').formulas=[["=MEDIAN('任务总表'!H7:H131)"]];n.getRange('B25').formulas=[['=SUM(B72:B86)']];n.getRange('B26').formulas=[['=SUM(C72:C86)']];n.getRange('B27').formulas=[["='积分规则'!B18-'积分规则'!B22"]];
+ n.getRange('C17:H28').format.wrapText=true;for(let row=17;row<=28;row++)n.getRange(`C${row}:H${row}`).merge();n.getRange('A17:H28').format.rowHeight=40;
+ n.getRange('B18').setNumberFormat('0.00');n.getRange('B22').setNumberFormat('0%');n.getRange('B23').setNumberFormat('0.000');
+ for(const row of [17,19,20,21,22,28])n.getRange(`B${row}`).format.fill='#FFF2D8';
+ wide(30,'原来的800/600/400/250/100改为1000/750/500/300/100。相邻差250/250/200/200，首末差900。以底分2200为例，四人第一名2980、三人第二名2950，早到仍领先30；三人第二名多拿50底分即可反超20。','H',48);
+ band(33,['比较案例','甲人数','甲TASK底分','甲系数','甲事件净分','甲完赛名次','甲总分','乙人数','乙TASK底分','乙系数','乙事件净分','乙完赛名次','乙总分','甲−乙','结论']);
+ const scenarios=[
+  ['四人先到仍胜同底分三人队',4,2200,null,0,1,null,3,2200,null,0,2],
+  ['三人队多50底分反超先到四人队',4,2200,null,0,1,null,3,2250,null,0,2],
+  ['第5名用任务分反超第1名',4,2200,null,0,1,null,3,2900,null,0,5],
+  ['同为3人，第二名多300底分反超',3,2200,null,0,1,null,3,2500,null,0,2],
+  ['转移100缩小前二差，早到仍领先',3,2200,null,-100,1,null,3,2200,null,100,2],
+  ['相同最重下蹲罚分仍可改变胜负',4,2200,null,-1500,1,null,3,2200,null,0,5]
+ ];
+ n.getRange('A34:L39').values=scenarios;
+ for(let row=34;row<=39;row++){
+  n.getRange(`D${row}`).formulas=[[`=IF(B${row}=$B$17,$B$28,$B$18)`]];n.getRange(`J${row}`).formulas=[[`=IF(H${row}=$B$17,$B$28,$B$18)`]];
+  n.getRange(`G${row}`).formulas=[[`=ROUND(C${row}*D${row},$B$19)+E${row}+INDEX('积分规则'!$B$18:$B$22,F${row})`]];
+  n.getRange(`M${row}`).formulas=[[`=ROUND(I${row}*J${row},$B$19)+K${row}+INDEX('积分规则'!$B$18:$B$22,L${row})`]];
+  n.getRange(`N${row}`).formulas=[[`=G${row}-M${row}`]];n.getRange(`O${row}`).formulas=[[`=IF(N${row}>0,"甲领先",IF(N${row}<0,"乙反超","同分，按同分规则"))`]];
+ }
+ n.getRange('A34:O39').format.wrapText=true;n.getRange('A34:O39').format.rowHeight=52;n.getRange('D34:D39').setNumberFormat('0.00');n.getRange('J34:J39').setNumberFormat('0.00');
+ band(42,['调整项目','执行口径']);
+ const rules=[
+  ['普通任务基础分','底分×实际提交队伍系数，逐笔四舍五入到1位小数。所有125项都使用同一结算原则；四人队极难实领360，三人队400。'],
+  ['题面与固定奖惩','Random3额外+50、ARC每失败−50，能力卡±5、−50、−100、转移100全部保持。不能把整场总分乘0.90。'],
+  ['任务重演','最近一次实际TASK账本金额×50%；例如70底分四人实领63，重演31.5；不再重复乘0.90。'],
+  ['下蹲（卡6）','实扣＝缺少总次数×25×3/实际队伍人数。三人每缺25、四人每缺18.75；全员未做均−1500。违规各自计数，不额外叠加TASK系数。'],
+  ['三足限制（卡7）','三人队最多3只脚落地（少于4）；四人队最多4只脚落地（少于5）。持续5分钟、违规−5保持。'],
+  ['固定三人参与的卡','昵称拼词（卡20）和圆周率（卡21）都限定选出的3名实际参与者；四人队第四人不补答。原三人队全员参加。'],
+  ['人数与身份','系数绑定实际队伍，不绑定棋盘。所有人仍属同一队共享名额、能力库存和定位；本方案不授权拆队跨地区并行或增加每区名额。'],
+  ['后端与历史','当前正式v1未接入人数系数。应用本稿须在未开赛配置中加入逐队系数、下蹲人数校正和卡7阈值；保留TASK实领快照供重演读取。已计分账本不自动回算。'],
+  ['当前成员变动','本稿按用户确认的4/3/3/4/3锁定人数。退赛、迟到、换队须由工作人员统一确认是否修改后续参数，不由客户端临时改人数。'],
+  ['最终同分规则','仍按总积分→实际TASK实领积分→完赛确认时间比较。人数校正后的TASK数值用于第二顺位。'],
+  ['公平性依据','30%可扩展份额与0.90属于缺少实测时的保守策划选择。姓名不能提供技术水平信息；未知熟练度、设备数与分工效率不伪装成测量结果。']
+ ];
+ n.getRange('A43:B53').values=rules;for(let row=43;row<=53;row++)n.getRange(`B${row}:H${row}`).merge();n.getRange('A43:H53').format.wrapText=true;n.getRange('A43:H53').format.rowHeight=56;
+ band(57,['四人队系数敏感性','四人第1名（底分2200）','三人第2名（底分2200）','前者−后者']);
+ n.getRange('A58:A60').values=[[0.85],[input.fourPlayerTaskCoefficient],[1]];
+ for(let row=58;row<=60;row++)n.getRange(`B${row}:D${row}`).formulas=[[`=ROUND(2200*A${row},$B$19)+'积分规则'!$B$18`,`=2200+'积分规则'!$B$19`,`=B${row}-C${row}`]];
+ n.getRange('A58:A60').setNumberFormat('0.00');n.getRange('A58:D60').format.rowHeight=30;
+ wide(62,'这些是分差敏感性，不是胜率。0.85会让本例先到四人队仍落后80，1.00则完全不校正人数，0.90使早到领先30。若活动强制同队只允许一个任务同时执行，额外人数优势会缩小，应据实复核系数。','H',52);
+ wide(64,'所有125项题面、任务ID、照片编号和格位保持原样；主表AE:AI列逐项列出五队基础实领金额。Bingo棋盘继续显示共享底分，不把“主题棋盘”错误当成唯一可领取队伍。','H',48);
+ band(66,['逐笔结算示例','三人队','四人队']);
+ n.getRange('A67:A69').values=[['70底分普通TASK实领'],['上项TASK重演奖励（50%）'],['全员各少2次下蹲的罚分']];
+ n.getRange('B67:C67').formulas=[['=ROUND(70*$B$28,$B$19)','=ROUND(70*$B$18,$B$19)']];
+ n.getRange('B68:C68').formulas=[['=B67*0.5','=C67*0.5']];
+ n.getRange('B69:C69').formulas=[['=-3*2*$B$20','=-4*2*$B$20*$B$17/4']];
+ n.getRange('B67:C69').setNumberFormat('0.0;[Red](0.0);"—"');n.getRange('A67:C69').format.rowHeight=35;n.getRange('A67:A69').format.wrapText=true;
+ band(71,['排序位次','全局低值15项','全局高值15项']);n.getRange('A72:A86').values=Array.from({length:15},(_,i)=>[i+1]);
+ n.getRange('B72:C86').formulas=Array.from({length:15},(_,i)=>[`=SMALL('任务总表'!$H$7:$H$131,A${72+i})`,`=LARGE('任务总表'!$H$7:$H$131,A${72+i})`]);
+ for(const [col,width]of [['A',200],['B',100],['C',120],['D',115],['E',385],['F',125],['G',140],['H',110],['I',115],['J',100],['K',110],['L',110],['M',120],['N',100],['O',150]])n.getRange(`${col}1:${col}86`).format.columnWidthPx=width;
+ n.freezePanes.freezeRows(7);
+ // The shared task prices and image assignments stay unchanged; five payment columns are new outputs.
+ main.tables.items[0].delete();main.getRange('AE6:AI6').values=[input.teams.map(t=>`${t.name}（${t.members.length}人）基础实领`)];
+ for(let i=0;i<5;i++){
+  const col=['AE','AF','AG','AH','AI'][i],rosterRow=8+i;
+  main.getRange(`${col}7:${col}131`).formulas=Array.from({length:125},(_,j)=>[`=ROUND(H${j+7}*'人数调整'!$C$${rosterRow},'人数调整'!$B$19)`]);
+  main.getRange(`${col}1:${col}131`).format.columnWidthPx=145;
+ }
+ main.tables.add('A6:AI131',true,'ChallengeTasks').showFilterButton=true;
+ main.getRange('AE6:AI6').format={fill:'#284766',font:{name:'Microsoft YaHei',size:11,bold:true,color:'#FFFFFF'},wrapText:true,horizontalAlignment:'center',verticalAlignment:'center',rowHeight:50};
+ main.getRange('AE7:AI131').format={font:{name:'Microsoft YaHei',size:11,color:'#184E77'},horizontalAlignment:'right',verticalAlignment:'center',numberFormat:'0.0'};
+ for(let i=0;i<125;i++)main.getRange(`AE${i+7}:AI${i+7}`).format.fill=i%2===0?'#E8F0F8':'#F3F6FA';
+ main.getRange('A2').values=[['HRG 125 项任务 · 17人调整']];main.getRange('F3').values=[['共享底分不变；实际提交队伍：四人0.90、三人1.00；五队实领金额见AE:AI列。']];main.getRange('F4').values=[['完赛1000/750/500/300/100；题面固定奖惩不缩放。成员名单与人数敏感能力规则见“人数调整”。']];
+ main.getRange('K6').values=[['无校正底分＋达标奖励']];main.getRange('AC6').values=[['三人队重演奖励']];
+ policy.getRange('A3').values=[['17人调整策划稿；共享底分和图片映射保留，人数结算与新完赛参数尚未回写线上赛局。']];
+ policy.getRange('B18:B22').values=input.finishRewards.map(p=>[p]);
+ policy.getRange('B17').values=[['17人调整奖励']];
+ policy.getRange('C7').values=[['共享底分400；实际三人队400、四人队360，仍为每主题中心D03。']];
+ policy.getRange('C12').values=[['卡12读取最近实际TASK实领金额的一半；四人校正不重复乘，保留小数。']];
+ policy.getRange('C54').values=[['人数调整：每缺25×3/人数，三人25、四人18.75；最重均−1500。卡7最多落地脚=人数，细则见人数调整页。']];
+ policy.getRange('B66').values=[['普通TASK底分×提交队伍系数 + 题面奖励 − 题面罚分 + 事件/能力净变动 + 统一完赛名次奖励；逐笔留账。']];
+ policy.getRange('B73').values=[['新人数参数待接入；当前正式v1仍使用原计分。需逐队TASK系数、卡6人数校正、卡7阈值；既有赛局不自动改价。']];
+ policy.getRange('A77').values=[['比较案例（以下均3人队）']];
+ policy.getRange('A80').values=[['第5名凭跨棋盘3300底分反超']];policy.getRange('F80').values=[[3300]];
+ policy.getRange('A81').values=[['转移100缩小前二差，未完全抹平']];
+ policy.getRange('A85').values=[['三人队1000/750/500/300/100，首末差900、相邻200–250；上表均按三人队金额。四人队只对TASK底分乘0.90，固定事件与完赛奖励不缩放，详见人数调整页。交换总分或最多−1500下蹲罚分仍可能改变个别赛局；这些是可核算案例，不是胜率预测。']];
+ policy.getRange('A148').values=[['本页排序按共享底分；实际人数系数与跨棋盘边界见人数调整页。H与AD原4000主题预算保持；四人队TASK实领0.90、三人1.00。上表各案例底分均能由全部125项中的至多15项组成，3300不限定单一主题。']];
+ boards.getRange('A3').values=[['此页显示公共底分，五队均可跨棋盘领取。实际基础分按提交队伍系数（三人1.00、四人0.90），题面奖惩另计。D无需图片，P按区域换图；具体五队实领见任务总表AE:AI。']];
+ for(let i=0;i<5;i++){const row=6+i*10,game=['Phigros','Arcaea','范式起源','maimai','通用'][i];boards.getRange(`A${row}`).values=[[`${game}主题棋盘 | 共享底分池4000 · 极难底分400 · 19图寻/6直接`]];}
+ // Verify the added count/efficiency controls really recalculate the existing payment outputs, then restore the supplied roster.
+ n.getRange('B8').values=[[3]];
+ if(n.getRange('C8').values[0][0]!==1||n.getRange('D8').values[0][0]!==25||main.getRange('AE7').values[0][0]!==90)throw new Error('Headcount recalculation');
+ n.getRange('B8').values=[[4]];
+ n.getRange('B22').values=[[0.15]];
+ if(n.getRange('B18').values[0][0]!==1||main.getRange('AE7').values[0][0]!==90)throw new Error('Assumption recalculation');
+ n.getRange('B22').values=[[input.scalableEffortShareAssumption]];
+ wb.recalculate();
+ if(JSON.stringify(main.getRange('A7:AD131').values)!==JSON.stringify(original))throw new Error('Shared tasks changed');
+ if(JSON.stringify(photos.getRange('A7:G63').values)!==JSON.stringify(oldImages))throw new Error('Images changed');
+ const adjustedTasks=baseline.tasks.map((t,i)=>{
+  if(main.getRange(`L${i+7}`).values[0][0]!==t.taskId)throw new Error('Baseline ID order');
+  const payments=Object.fromEntries(input.teams.map(team=>[team.id,Math.round(t.score*(team.members.length===4?input.fourPlayerTaskCoefficient:1)*10)/10]));
+  for(let j=0;j<5;j++)if(main.getRange(`${['AE','AF','AG','AH','AI'][j]}${i+7}`).values[0][0]!==payments[input.teams[j].id])throw new Error('Payment formula mismatch');
+  return {...t,payments};
+ });
+ const expected=[30,-20,-20,-50,50,-820];for(let i=0;i<6;i++)if(n.getRange(`N${i+34}`).values[0][0]!==expected[i])throw new Error('New scenario mismatch');
+ const oldExpected=[250,-50,-200,50,250,-100];for(let i=0;i<6;i++)if(policy.getRange(`J${i+78}`).values[0][0]!==oldExpected[i])throw new Error('Old scenario mismatch');
+ for(let i=0;i<5;i++)if(n.getRange(`F${i+8}`).values[0][0]!==-1500)throw new Error('Squat maxima mismatch');
+ if(n.getRange('B13').values[0][0]!==17)throw new Error('Roster total mismatch');
+ console.log((await wb.inspect({kind:'match',searchTerm:'#REF!|#DIV/0!|#VALUE!|#N/A|#NAME\\?|#NUM!',options:{useRegex:true},summary:'人数调整最终公式扫描',maxChars:800})).ndjson);
+ const plan={...baseline,schema:'hrg-scoring-roster17-proposal',status:input.status,version:input.version,rules:{...baseline.rules,finishRewards:input.finishRewards},rosterAdjustment:input,tasks:adjustedTasks};
+ await fs.writeFile(path.join(outDir,'bingo-score-plan-roster17.json'),JSON.stringify(plan,null,2));
+ const renders=[['roster-summary','人数调整','A2:H30'],['roster-scenarios','人数调整','A33:O39'],['roster-payments','任务总表','AD6:AI15'],['roster-policy','积分规则','A17:H22']];
+ for(const [name,sheetName,range]of renders){const image=await wb.render({sheetName,range,scale:1.15,format:'png'});await fs.writeFile(path.join(outDir,name+'.png'),new Uint8Array(await image.arrayBuffer()));}
+ const file=path.join(outDir,'HRG125项任务_17人分组调整.xlsx');await(await SpreadsheetFile.exportXlsx(wb)).save(file);
+ console.log(JSON.stringify({saved:file,players:17,taskPaymentValues:625,sourceTasksPreserved:125,coefficients:input.teams.map(t=>[t.name,t.members.length,t.members.length===4?0.9:1]),finishRewards:input.finishRewards,squatMax:1500,scenarios:expected}));
+ process.exit(0);
+}
 if(process.argv.includes('--score-tasks') || process.argv.includes('--plan-only')) {
  const root=path.resolve(outDir,'../..');
  const records=JSON.parse(await fs.readFile(path.join(outDir,'integrated-data.json'),'utf8'));

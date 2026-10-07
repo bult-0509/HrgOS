@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   Camera,
@@ -28,6 +28,10 @@ import { groupBingoTasks } from '../data/bingoBoards';
 import { teams } from '../data/mock';
 import { canRevealTask, difficultyLevel, type PhotoFindProgress } from '../domain/photoFind';
 import { PhotoFindNotice, TaskChallenge } from './TaskChallenge';
+import { CardHand, CardDeckDock, TacticCard, gameCardModel } from '../cards/TacticCard';
+import { CardReceipt, CardCast } from '../cards/CardReceipt';
+import { useOverlayBusy } from '../components/overlay';
+import { automaticCardTarget } from '../domain/abilityCard';
 
 interface PlayerAppProps {
   team: TeamStatus;
@@ -35,6 +39,8 @@ interface PlayerAppProps {
   /** 后台审核状态的只读输入。玩家端不持有区域 setter。 */
   approvedRegionId: string | null;
   cards: GameCard[];
+  /** 仅本地开发预览可选择卡池中的牌，不添加到持有库存。 */
+  cardCatalog?: GameCard[];
   messages: GameMessage[];
   onLogout: () => void;
   onSubmitTask: (taskId: string, filename: string) => void;
@@ -44,17 +50,12 @@ interface PlayerAppProps {
   onReadMessage: (messageId: string) => void;
 }
 
-const cardNames: Record<GameCard["category"], string> = {
-  intel: "情报",
-  boost: "增益",
-  control: "干扰"
-};
-
 export function PlayerApp({
   team,
   tasks,
   approvedRegionId,
   cards,
+  cardCatalog,
   messages,
   onLogout,
   onSubmitTask,
@@ -66,10 +67,18 @@ export function PlayerApp({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedCard, setSelectedCard] = useState<GameCard | null>(null);
   const [playingCard, setPlayingCard] = useState<GameCard | null>(null);
+  const [receipt, setReceipt] = useState<{ card: GameCard; preview: boolean } | null>(null);
+  const [rewardQueue, setRewardQueue] = useState<GameCard[]>([]);
+  const knownCards = useRef({ teamId: team.id, ids: new Set(cards.map(card => card.id)) });
+  const overlayBusy = useOverlayBusy();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cardTarget, setCardTarget] = useState(() => teams.find(candidate => candidate.id !== team.id)!.name);
   const [showMessages, setShowMessages] = useState(false);
+  const [previewCardId, setPreviewCardId] = useState('');
+  const previewCards = cardCatalog ?? cards;
+  const previewCard = previewCards.find(card => card.id === previewCardId) ?? previewCards[0];
+  const automaticTarget = automaticCardTarget(selectedCard?.target);
   const [pageVisible, setPageVisible] = useState(true);
   const region = photoRegions.find(item => item.id === approvedRegionId);
   const regionId = region?.id ?? '';
@@ -78,7 +87,7 @@ export function PlayerApp({
   const selectedPhoto = selectedTask ? getPhotoClue(regionId, selectedTask.sharedSlot ?? '') : null;
   const taskRevealed = !!selectedTask && canRevealTask(selectedTask.sharedSlot, approvedRegionId, photoFinds);
   const selectedPhotoStatus = photoFinds[selectedTask?.sharedSlot ?? '']?.status ?? 'locked';
-  const motionPaused = !pageVisible || Boolean(selectedTask || selectedCard || showMessages || playingCard);
+  const motionPaused = !pageVisible || Boolean(selectedTask || selectedCard || showMessages || playingCard || receipt);
   const unreadCount = messages.filter((message) => message.unread).length;
 
   // 推进地区不替换任务集合，也不清空得分。关闭旧地区上传草稿，避免错交旧图。
@@ -109,13 +118,30 @@ export function PlayerApp({
     setSelectedFile(null);
   };
 
+  useEffect(() => {
+    if (knownCards.current.teamId !== team.id) {
+      knownCards.current = { teamId: team.id, ids: new Set(cards.map(card => card.id)) };
+      setRewardQueue([]); setReceipt(null); setSelectedCard(null); setPlayingCard(null);
+      return;
+    }
+    const added = cards.filter(card => !knownCards.current.ids.has(card.id));
+    cards.forEach(card => knownCards.current.ids.add(card.id));
+    if (added.length) setRewardQueue(queue => [...queue, ...added]);
+  }, [cards, team.id]);
+
+  useEffect(() => {
+    if (receipt || selectedTask || selectedCard || showMessages || playingCard || overlayBusy || !rewardQueue.length || document.querySelector('dialog[open]')) return;
+    const [next, ...remaining] = rewardQueue;
+    setRewardQueue(remaining);
+    if (cards.some(card => card.id === next.id)) setReceipt({ card: next, preview: false });
+  }, [rewardQueue, receipt, selectedTask, selectedCard, showMessages, playingCard, overlayBusy, cards]);
+
   const playCard = () => {
     if (!selectedCard) return;
     const card = selectedCard;
     setPlayingCard(card);
     setSelectedCard(null);
-    onUseCard(card.id, cardTarget);
-    window.setTimeout(() => setPlayingCard(null), 1180);
+    onUseCard(card.id, automaticTarget ? card.target === 'self' ? team.name : automaticTarget : cardTarget);
   };
 
   return (
@@ -154,6 +180,7 @@ export function PlayerApp({
                 slot: task.sharedSlot,
                 difficulty: difficultyLevel(task.scoreDifficulty ?? task.difficulty),
                 photoStatus: task.sharedSlot?.startsWith('P') ? photoFinds[task.sharedSlot]?.status ?? 'locked' : undefined,
+                completed: task.state === 'awarded',
                 points: task.configured === false || task.pointsConfigured === false ? undefined : task.points,
                 state: task.configured === false ? 'unconfigured' : canRevealTask(task.sharedSlot, approvedRegionId, photoFinds) ? task.state : 'locked',
                 pendingCount: task.pendingCount
@@ -165,33 +192,10 @@ export function PlayerApp({
           <section className="hand-section" aria-labelledby="hand-title">
             <div className="hand-section__header">
               <div><p className="eyebrow">LOADOUT · {String(cards.length).padStart(2, "0")}</p><h2 id="hand-title">战术道具</h2></div>
-              <p>悬停查看牌面，点击后选择目标。</p>
+              {import.meta.env.DEV && previewCard ? <div className="hrg-card-preview-controls"><label><span>卡面预览 · {previewCards.length} 种</span><select aria-label="选择功能卡预览" value={previewCard.id} onChange={event => setPreviewCardId(event.target.value)}>{previewCards.map(card => <option key={card.id} value={card.id}>{card.number == null ? '' : `${String(card.number).padStart(2, '0')} · `}{card.name}</option>)}</select></label><button className="hrg-card-preview-button" onClick={() => setReceipt({ card: previewCard, preview: true })}>收卡动效预览</button></div> : null}
             </div>
             {cards.length ? (
-              <div className="card-hand" aria-label="当前持有的道具卡">
-                {cards.map((card, index) => {
-                  const tilt = (index - (cards.length - 1) / 2) * 5;
-                  return (
-                    <button
-                      className={`spire-card spire-card--${card.category}`}
-                      key={card.id}
-                      onClick={() => setSelectedCard(card)}
-                      style={{ "--card-tilt": `${tilt}deg`, "--card-order": index } as CSSProperties}
-                      aria-label={`${card.name}，${card.description}，剩余 ${card.uses} 次`}
-                    >
-                      <span className="spire-card__cost">{card.uses}</span>
-                      <span className="spire-card__frame">
-                        <span className="spire-card__code">{card.id}</span>
-                        <span className="spire-card__title">{card.name}</span>
-                        <span className="spire-card__art"><Sparkles size={38} aria-hidden="true" /><i>{card.category === "intel" ? "SCAN" : card.category === "boost" ? "BOOST" : "JAM"}</i></span>
-                        <span className="spire-card__type">{cardNames[card.category]}</span>
-                        <span className="spire-card__copy">{card.description}</span>
-                        <span className="spire-card__hint">点击查看</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <CardHand cards={cards.map(gameCardModel)} onSelect={id => setSelectedCard(cards.find(card => card.id === id) ?? null)} />
             ) : (
               <div className="hand-empty"><Sparkles size={26} aria-hidden="true" /><span>手里没牌</span></div>
             )}
@@ -269,13 +273,9 @@ export function PlayerApp({
       ) : null}
 
       {selectedCard ? (
-        <Modal title={selectedCard.name} description={selectedCard.description} onClose={() => setSelectedCard(null)}>
-          <div className={`card-detail-art card-detail-art--${selectedCard.category}`}>
-            <span className="card-detail-art__cost">{selectedCard.uses}</span>
-            <Sparkles size={52} aria-hidden="true" />
-            <small>{cardNames[selectedCard.category]}牌</small>
-          </div>
-          <label className="field"><span>目标队伍</span><select value={cardTarget} onChange={(event) => setCardTarget(event.target.value)}>{teams.filter(candidate => candidate.id !== team.id).map(candidate => <option key={candidate.id}>{candidate.name}</option>)}</select></label>
+        <Modal title={selectedCard.name} onClose={() => setSelectedCard(null)}>
+          <div className="hrg-card-detail"><TacticCard card={gameCardModel(selectedCard)} /></div>
+          {automaticTarget ? <p className="hrg-card-target-note">作用目标：{selectedCard.target === 'self' ? team.name : automaticTarget}</p> : <label className="field"><span>{selectedCard.target === 'highest' ? '并列榜首时指定队伍' : '目标队伍'}</span><select value={cardTarget} onChange={(event) => setCardTarget(event.target.value)}>{teams.filter(candidate => candidate.id !== team.id && candidate.status !== 'finished').map(candidate => <option key={candidate.id}>{candidate.name}</option>)}</select></label>}
           {selectedCard.needsConfirmation ? <p className="inline-alert"><ShieldAlert size={18} aria-hidden="true" />出牌后等待工作人员确认。</p> : null}
           <button className="button button--primary button--full" onClick={playCard}><Zap size={18} aria-hidden="true" />打出这张牌</button>
         </Modal>
@@ -294,14 +294,9 @@ export function PlayerApp({
         </Modal>
       ) : null}
 
-      {playingCard ? (
-        <div className="card-play-overlay" aria-hidden="true">
-          <div className={`playing-card playing-card--${playingCard.category}`}>
-            <span>{playingCard.name}</span><Sparkles size={50} />
-          </div>
-          <span className="card-play-burst" />
-        </div>
-      ) : null}
+      <CardDeckDock count={cards.length} onClick={() => document.querySelector('.hand-section')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })} />
+      {playingCard ? <CardCast card={gameCardModel(playingCard)} onDone={() => setPlayingCard(null)} /> : null}
+      {receipt ? <CardReceipt key={`${receipt.preview ? 'preview' : 'new'}-${receipt.card.id}`} card={gameCardModel(receipt.card)} sourceLabel={receipt.preview ? '本地演示' : '新补给'} preview={receipt.preview} onConfirm={async () => {}} onDone={() => setReceipt(null)} /> : null}
     </div>
   );
 }

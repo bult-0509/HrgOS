@@ -9,11 +9,11 @@ const fixtures: readonly LoginAccount[] = [
 ];
 
 describe("活动账号登录权限", () => {
-  it("报名名单按志愿分为 4、2、2、4、3 人的五队；工作人员不参与分组", () => {
+  it("参赛名单分为 4、3、3、4、3 人的五队；工作人员不参与分组", () => {
     const expected = [
-      ["team-1", ["fuqi01", "sendaotianling02", "banyuehe09", "forzxol08"]],
-      ["team-2", ["huanying04", "wangjiarui11"]],
-      ["team-3", ["xtm06", "zenithceleste15"]],
+      ["team-1", ["fuqi01", "sendaotianling02", "banyuehe09", "yezilin23316"]],
+      ["team-2", ["huanying04", "wangjiarui11", "forzxol08"]],
+      ["team-3", ["xtm06", "zenithceleste15", "luozaizailzz17"]],
       ["team-4", ["phony03", "lingjunzimei07", "fidrop12", "yingchuanbai14"]],
       ["team-5", ["headphoneline10", "chunye05", "rsyuanyuan13"]]
     ] as const;
@@ -30,13 +30,13 @@ describe("活动账号登录权限", () => {
     expect(resolveLoginSession('player', 'test-player', 'wrong', fixtures)).toBeNull();
   });
 
-  it("仅配置 4 个工作人员和 15 个玩家账号，账号与盐值不重复", () => {
-    expect(loginAccounts).toHaveLength(19);
+  it("配置 4 个工作人员和 17 个玩家账号，账号与盐值不重复", () => {
+    expect(loginAccounts).toHaveLength(21);
     expect(loginAccounts.filter((account) => account.role === "staff")).toHaveLength(4);
-    expect(loginAccounts.filter((account) => account.role === "player")).toHaveLength(15);
-    expect(new Set(loginAccounts.map((account) => account.username)).size).toBe(19);
-    expect(new Set(loginAccounts.map((account) => account.salt)).size).toBe(19);
-    expect(new Set(loginAccounts.map((account) => account.passwordHash)).size).toBe(19);
+    expect(loginAccounts.filter((account) => account.role === "player")).toHaveLength(17);
+    expect(new Set(loginAccounts.map((account) => account.username)).size).toBe(21);
+    expect(new Set(loginAccounts.map((account) => account.salt)).size).toBe(21);
+    expect(new Set(loginAccounts.map((account) => account.passwordHash)).size).toBe(21);
     expect(loginAccounts.every((account) => /^[a-f0-9]{64}$/.test(account.passwordHash))).toBe(true);
     expect(loginAccounts.some((account) => account.username === "player01")).toBe(false);
   });

@@ -1,0 +1,154 @@
+/* 单一卡面体系；hrg-* 命名空间不继承旧 spire/reward 卡框。 */
+.hrg-tactic-card {
+  --card-accent:#72dce4; --card-dark:#203942;
+  position:relative; display:grid; grid-template-rows:46px 128px 25px minmax(0,1fr) 22px;
+  width:100%; height:100%; min-width:0; padding:12px; box-sizing:border-box;
+  border:3px solid #bfa26a; border-radius:18px 18px 22px 22px;
+  color:#f6ead0; background:linear-gradient(145deg,#637378 0%,var(--card-dark) 22%,#131e25 78%,#3a4649);
+  box-shadow:inset 0 0 0 1px #edcf8c, inset 0 0 0 4px #111a20,0 7px 14px #0007;
+  text-align:center; font:inherit; font-weight:400; line-height:1.5; isolation:isolate;
+}
+.hrg-tactic-card--boost { --card-accent:#c7ee72; --card-dark:#34432c; }
+.hrg-tactic-card--control { --card-accent:#f39dba; --card-dark:#482c43; }
+.hrg-tactic-card__badge {
+  position:absolute; z-index:2; top:8px; left:8px; display:grid; place-items:center; width:34px; height:34px;
+  border:2px solid #d6bc7d; border-radius:50%; background:radial-gradient(circle at 32% 23%,var(--card-accent),var(--card-dark) 70%);
+  color:#fff7df; font-size:17px; font-weight:900; text-shadow:0 2px 2px #000; box-shadow:0 2px 0 #090e13;
+}
+.hrg-tactic-card__title { align-self:center; padding:0 2px 0 28px; font-size:18px; font-weight:800; line-height:1.3; overflow-wrap:anywhere; text-shadow:0 2px 2px #090d14; }
+.hrg-tactic-card__art {
+  position:relative; overflow:hidden; display:grid; place-items:center; border:1px solid #9d8f6b; border-radius:40% 40% 6px 6px/14% 14% 6px 6px;
+  color:var(--card-accent); background:radial-gradient(ellipse at 50% 50%,var(--card-dark),#101c26 82%);
+}
+.hrg-tactic-card__art::before,.hrg-tactic-card__art::after { content:''; position:absolute; width:170px; height:1px; background:var(--card-accent); opacity:.22; transform:rotate(-35deg); }
+.hrg-tactic-card__art::after { transform:rotate(35deg); }
+.hrg-tactic-card--boost .hrg-tactic-card__art::before { width:60px; height:60px; border:1px solid currentColor; background:none; transform:rotate(45deg); }
+.hrg-tactic-card--control .hrg-tactic-card__art::before { width:90px; height:90px; border:1px dashed currentColor; background:none; transform:rotate(20deg); }
+.hrg-tactic-card__art > svg { position:relative; width:64px; height:64px; z-index:1; filter:drop-shadow(0 0 12px color-mix(in srgb,var(--card-accent) 22%,transparent)); }
+.hrg-tactic-card__art > span { position:absolute; bottom:10px; font-size:9px; letter-spacing:5px; opacity:.7; }
+.hrg-tactic-card__orbit { position:absolute; width:106px; height:106px; border:1px solid var(--card-accent); border-radius:50%; opacity:.26; }
+.hrg-tactic-card__orbit--inner { width:88px; height:88px; border-style:dashed; opacity:.15; }
+.hrg-tactic-card__type { align-self:center; justify-self:center; z-index:1; padding:2px 22px; font-size:12px; line-height:18px; color:var(--card-accent); border:1px solid #897b5a; background:#19252b; border-radius:4px; margin-top:-4px; }
+.hrg-tactic-card__rules { display:block; min-height:0; margin-top:2px; padding:10px 12px; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; color:#282e30; background:linear-gradient(130deg,#f0e6cd,#d9cdae); border:1px solid #b8a377; border-radius:4px 4px 12px 12px; font-size:16px; line-height:1.65; overflow-wrap:anywhere; text-align:left; }
+.hrg-tactic-card__rules:focus-visible { outline:2px solid var(--card-accent); outline-offset:2px; }
+.hrg-tactic-card__footer { align-self:end; font-size:10px; letter-spacing:2px; color:#bcbaad; }
+.hrg-tactic-card--compact { grid-template-rows:42px 82px 22px minmax(0,1fr) 18px; padding:9px; }
+.hrg-tactic-card--compact .hrg-tactic-card__title { font-size:14px; }
+.hrg-tactic-card--compact .hrg-tactic-card__badge { top:7px; left:7px; width:27px; height:27px; font-size:14px; }
+.hrg-tactic-card--compact .hrg-tactic-card__art > svg { width:43px; height:43px; }
+.hrg-tactic-card--compact .hrg-tactic-card__art > span { bottom:3px; font-size:8px; letter-spacing:3px; }
+.hrg-tactic-card--compact .hrg-tactic-card__rules { padding:7px 9px; font-size:13px; line-height:1.5; overflow:hidden; }
+.hrg-card-hand { display:flex; align-items:end; justify-content:safe center; padding:54px 30px 32px; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin; min-width:0; isolation:isolate; }
+.hrg-hand-card {
+  position:relative; z-index:calc(2 + var(--card-order)); flex:0 0 178px; width:178px; height:274px; margin:0 0 0 -32px; padding:0; border:0; border-radius:18px;
+  background:none; color:inherit; font:inherit; cursor:pointer; text-align:center; transform:translateY(8px) rotate(var(--card-angle)); transform-origin:50% 100%;
+  transition:transform 260ms cubic-bezier(.2,.8,.2,1); -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+}
+.hrg-hand-card:first-child { margin-left:0; }
+.hrg-hand-card__arrival { display:block; height:100%; animation:hrg-hand-deal 380ms var(--deal-delay) cubic-bezier(.16,1,.3,1) backwards; }
+/* 入场在子层、抬牌在父层；禁止 animation-fill-mode:both 覆盖悬停 transform。 */
+.hrg-hand-card:focus-visible { z-index:100; outline:3px solid #f4dd99; outline-offset:4px; transform:translateY(-28px) rotate(0deg) scale(1.05); }
+@media(hover:hover) and (pointer:fine) { .hrg-hand-card:hover { z-index:100; transform:translateY(-28px) rotate(0deg) scale(1.05); } }
+.hrg-hand-card:active { z-index:100; transform:translateY(-16px) rotate(0deg) scale(1.02); }
+.hrg-card-detail { width:min(100%,290px); height:402px; margin:0 auto; }
+.hrg-deck-dock,.ability-app button.hrg-deck-dock {
+  position:fixed; right:max(18px,env(safe-area-inset-right)); bottom:max(18px,env(safe-area-inset-bottom)); z-index:85;
+  display:flex; align-items:center; justify-content:center; gap:10px; min-height:48px; margin:0; padding:10px 14px; border:1px solid #bfa26a; border-radius:9px;
+  background:#19252bf5; color:#f6e1ac; font:inherit; font-size:14px; line-height:1.4; cursor:pointer; box-shadow:0 4px 18px #0006; transition:transform 180ms ease;
+}
+button.hrg-deck-dock:hover { transform:translateY(-3px); }
+button.hrg-deck-dock:focus-visible { outline:3px solid #f4dd99; outline-offset:4px; }
+.hrg-deck-dock__count { font-weight:800; }
+.hrg-receipt,.hrg-card-cast { position:fixed; inset:0; width:100%; height:100dvh; max-width:none; max-height:none; margin:0; padding:20px; box-sizing:border-box; border:0; color:#f6ead0; background:#071018df; overflow-x:clip; overflow-y:auto; font:inherit; }
+.hrg-receipt::backdrop,.hrg-card-cast::backdrop { background:#0005; backdrop-filter:blur(5px); }
+.hrg-receipt:not([open]),.hrg-card-cast:not([open]) { display:none; }
+.hrg-receipt[open] { display:grid; place-items:center; }
+.hrg-receipt__layout { display:grid; justify-items:center; gap:20px; width:100%; margin:auto; }
+.hrg-receipt__heading { text-align:center; }
+.hrg-receipt__heading p { margin:0 0 8px; color:#c4af80; font-size:12px; letter-spacing:2px; }
+.hrg-receipt__heading h2 { margin:0; font-size:28px; line-height:1.4; color:#f6ead0; font-family:inherit; }
+.hrg-receipt__heading > span { display:block; margin-top:6px; font-size:13px; color:#adafa9; }
+.hrg-receipt__stage { position:relative; width:280px; height:396px; perspective:1100px; }
+.hrg-receipt__flight,.hrg-receipt__arrival,.hrg-receipt__turn { position:relative; width:100%; height:100%; }
+.hrg-receipt__flight { z-index:2; transform-origin:center; }
+.hrg-receipt__turn { transform-style:preserve-3d; }
+.hrg-receipt__front,.hrg-receipt__back { position:absolute; inset:0; backface-visibility:hidden; }
+.hrg-receipt__back { display:grid; align-content:center; justify-items:center; gap:22px; transform:rotateY(180deg); border:3px solid #bfa26a; border-radius:18px; color:#e6c985; background:repeating-linear-gradient(45deg,#263c42 0 2px,#1b2a33 2px 15px); box-shadow:inset 0 0 0 8px #1b2a33,inset 0 0 0 9px #bfa26a; }
+.hrg-receipt__back > span { letter-spacing:12px; padding-left:12px; font-weight:900; }
+.hrg-receipt__halo { position:absolute; inset:-36px; border-radius:50%; background:radial-gradient(ellipse,#d4b66a22,transparent 65%); pointer-events:none; opacity:0; }
+.hrg-receipt[data-phase=enter] .hrg-receipt__arrival { animation:hrg-receipt-arrive 480ms cubic-bezier(.16,1,.3,1) both; }
+.hrg-receipt[data-phase=enter] .hrg-receipt__turn { animation:hrg-receipt-turn 480ms 140ms cubic-bezier(.25,.1,.2,1) both; }
+.hrg-receipt[data-phase=enter] .hrg-receipt__halo { animation:hrg-receipt-halo 650ms 150ms ease-out both; }
+.hrg-receipt__controls { display:grid; grid-template-columns:1fr auto; align-items:center; gap:8px 12px; width:min(100%,320px); text-align:center; }
+.hrg-receipt__controls button { min-height:48px; border-radius:7px; font:inherit; font-weight:700; padding:10px 14px; cursor:pointer; }
+.hrg-receipt__claim { border:1px solid #d1b773; color:#fff0cd; background:linear-gradient(#79663e,#4a3b26); box-shadow:0 3px 0 #10171d; }
+.hrg-receipt__claim:hover { background:linear-gradient(#8f7746,#60492c); }
+.hrg-receipt__later { border:0; color:#c0c4c2; background:none; font-size:13px!important; }
+.hrg-receipt__controls button:focus-visible { outline:3px solid #f4dd99; outline-offset:3px; }
+.hrg-receipt__controls button:disabled { opacity:.6; cursor:wait; }
+.hrg-receipt__controls > p { grid-column:1/-1; margin:6px 0 0; font-size:12px; line-height:1.6; color:#adb4b1; }
+.hrg-receipt__controls > p[role=alert] { color:#ffc2b4; font-size:14px; }
+.hrg-receipt[data-phase=flight] .hrg-receipt__heading,.hrg-receipt[data-phase=flight] .hrg-receipt__controls { opacity:0; transition:opacity 140ms; pointer-events:none; }
+.hrg-receipt__dock { z-index:3; pointer-events:none; }
+.hrg-receipt__dock::after { content:''; position:absolute; inset:-4px; border:2px solid #e6c985; border-radius:12px; opacity:0; }
+.hrg-receipt[data-phase=flight] .hrg-receipt__dock::after { animation:hrg-deck-pulse 300ms 350ms ease-out both; }
+.hrg-card-cast[open] { display:grid; place-items:center; }
+.hrg-card-cast > div { width:260px; height:374px; position:relative; animation:hrg-cast 720ms cubic-bezier(.16,1,.3,1) both; }
+.hrg-card-cast > div > span:last-child { position:absolute; bottom:-40px; left:0; width:100%; text-align:center; font-size:18px; color:#e8d399; }
+.ability-card.hrg-inventory-card { padding:14px; background:#111b23; border-color:#35434a; }
+.hrg-inventory-card__face { width:min(100%,280px); height:400px; margin:0 auto 16px; }
+.hrg-inventory-card > small { display:block; padding:8px 0; color:#bfc8c5; }
+.hrg-card-use-form { display:grid; gap:12px; }
+.hrg-card-use-form label { display:grid; gap:7px; font-size:14px; }
+.hrg-card-use-form select { width:100%; min-height:44px; border:1px solid #596453; border-radius:6px; padding:10px 12px; color:inherit; background:#111b23; font:inherit; }
+.hrg-card-use-form > p { margin:0; font-size:13px; line-height:1.6; color:#b6bbb8; }
+.hrg-card-use-form > p[role=alert] { color:#ffc2b4; }
+.hrg-card-use-form > button { min-height:48px; border:1px solid #d1b773; border-radius:6px; padding:10px 16px; background:#645232; color:#fff0cd; font:inherit; cursor:pointer; }
+.hrg-card-use-form > button:disabled { opacity:.5; cursor:default; }
+.hrg-card-use-form :focus-visible { outline:3px solid #f4dd99; outline-offset:3px; }
+.hrg-card-inventory > details { margin-top:16px; }
+.hrg-card-inventory > details > summary { min-height:44px; cursor:pointer; }
+.hand-section__header .hrg-card-preview-button { min-height:44px; padding:8px 12px; background:none; color:#c7b589; border:1px solid #6e644c; border-radius:6px; font:inherit; font-size:12px; cursor:pointer; }
+.hrg-card-preview-controls { display:flex; align-items:end; gap:10px; min-width:0; }
+.hrg-card-preview-controls label { display:grid; gap:5px; min-width:0; color:#b8b6a6; font-size:11px; }
+.hrg-card-preview-controls select { width:100%; max-width:210px; min-height:44px; border:1px solid #6e644c; border-radius:6px; padding:8px; color:#e4d9bb; background:#151f24; font:inherit; font-size:13px; }
+.hrg-card-preview-controls button { flex-shrink:0; }
+.hrg-card-target-note { margin:0; color:#c9c8b6; font-size:14px; line-height:1.6; }
+@keyframes hrg-hand-deal { from { transform:translate3d(0,46px,0) scale(.88); opacity:0; } to { transform:none; opacity:1; } }
+@keyframes hrg-receipt-arrive { from { transform:translate3d(0,58px,0) rotate(-7deg) scale(.78); opacity:0; } to { transform:none; opacity:1; } }
+@keyframes hrg-receipt-turn { from { transform:rotateY(180deg); } to { transform:rotateY(0deg); } }
+@keyframes hrg-receipt-halo { 0% { opacity:0; transform:scale(.65); } 35% { opacity:1; } 100% { opacity:0; transform:scale(1.2); } }
+@keyframes hrg-deck-pulse { from { opacity:.8; transform:scale(1); } to { opacity:0; transform:scale(1.3); } }
+@keyframes hrg-cast { 0% { transform:translate3d(0,50px,0) rotate(-7deg) scale(.86); opacity:0; } 30%,55% { transform:none; opacity:1; } 100% { transform:translate3d(0,-110px,0) rotate(5deg) scale(.78); opacity:0; } }
+@media(max-width:600px) {
+  .hand-section__header { flex-wrap:wrap; }
+  .hrg-card-preview-controls { width:100%; }
+  .hrg-card-preview-controls label { flex:1; }
+  .hrg-card-preview-controls select { max-width:none; }
+  .hrg-card-hand { justify-content:flex-start; padding:48px 20px 30px; }
+  .hrg-hand-card { flex-basis:156px; width:156px; height:252px; margin-left:-24px; }
+  .hrg-tactic-card--compact .hrg-tactic-card__title { font-size:13px; }
+  .hrg-receipt { padding:max(16px,env(safe-area-inset-top)) 16px max(74px,calc(env(safe-area-inset-bottom) + 64px)); }
+  .hrg-receipt__layout { gap:16px; }
+  .hrg-receipt__stage { width:260px; height:374px; }
+  .hrg-receipt__heading h2 { font-size:25px; }
+  .hrg-deck-dock,.ability-app button.hrg-deck-dock { right:max(12px,env(safe-area-inset-right)); bottom:max(12px,env(safe-area-inset-bottom)); }
+}
+@media(max-height:740px) and (min-height:481px) {
+  .hrg-receipt__layout { gap:12px; }
+  .hrg-receipt__stage { height:330px; width:242px; }
+  .hrg-receipt__stage .hrg-tactic-card { grid-template-rows:40px 90px 25px minmax(0,1fr) 18px; }
+}
+@media(max-height:480px) and (min-width:520px) {
+  .hrg-receipt { padding:16px 24px; }
+  .hrg-receipt__layout { width:min(100%,670px); grid-template-columns:232px minmax(0,1fr); gap:14px 30px; }
+  .hrg-receipt__stage { grid-column:1; grid-row:1/3; width:232px; height:320px; }
+  .hrg-receipt__stage .hrg-tactic-card { grid-template-rows:40px 80px 25px minmax(0,1fr) 18px; }
+  .hrg-receipt__heading { grid-column:2; align-self:end; }
+  .hrg-receipt__controls { grid-column:2; align-self:start; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .hrg-hand-card,.hrg-deck-dock,.hrg-receipt *,.hrg-card-cast * { animation:none!important; transition:none!important; }
+  .hrg-hand-card__arrival,.hrg-receipt__arrival,.hrg-receipt__turn { transform:none; opacity:1; }
+  .hrg-receipt__halo { display:none; }
+}

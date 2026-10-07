@@ -6,7 +6,7 @@ export function PhotoFindNotice({ status }: { status: PhotoFindStatus }) {
   const pending = status === 'pending';
   return <div className="photo-find-notice" data-status={status} role="status">
     {pending ? <Clock3 size={24} aria-hidden="true" /> : status === 'rejected' ? <Focus size={24} aria-hidden="true" /> : <LockKeyhole size={24} aria-hidden="true" />}
-    <div><strong>{pending ? '图寻审核中' : status === 'rejected' ? '重新提交图寻' : '先完成图寻'}</strong><p>复刻参考图所在地点与拍摄角度。审核通过后，解锁五张 Bingo 对应的任务。</p></div>
+    <div><strong>任务锁定中，请先完成图寻。</strong>{pending ? <span className="sr-only">图寻审核中。</span> : status === 'rejected' ? <span className="sr-only">图寻已打回，可重新提交。</span> : null}</div>
   </div>;
 }
 

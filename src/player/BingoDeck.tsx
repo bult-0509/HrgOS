@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cyclicBoardOffset } from '../data/bingoBoards';
 import { getPhotoClue } from '../data/photoClues';
 import { getTeamBingoTheme } from './teamBingoThemes';
@@ -73,7 +73,8 @@ export function BingoDeck({ boards, actorTeamId, approvedRegionId, paused = fals
                 {theme ? <img className="tb-frame" src={`${root}frame-${theme.id}.svg`} alt="" width="1000" height="1000" /> : null}
                 <div className="tb-core"><div className="bingo-peek__head">{String(index + 1).padStart(2, '0')} / {String(boards.length).padStart(2, '0')}</div><div className="bingo-peek__grid">{board.items.map((item, n) => {
                   const slot = photoSlotFor(item, n), photo = getPhotoClue(approvedRegionId ?? '', slot ?? '');
-                  return <span key={item.id} className="bingo-peek__cell" data-difficulty={item.difficulty}>{photo ? <img src={photo.preview} alt="" width="480" height="480" loading="lazy" /> : null}<b>{slot}</b></span>;
+                  const completed=!!item.completed||item.state==='awarded';
+                  return <span key={item.id} className="bingo-peek__cell" data-difficulty={item.difficulty} data-completed={completed}>{photo ? <img src={photo.preview} alt="" width="480" height="480" loading="lazy" /> : null}{item.points!=null?<b>{item.points}</b>:null}{completed?<span className="bingo-peek__state"><Check size={12}/></span>:null}</span>;
                 })}</div><div className="tb-footer">19 / 06</div></div>
               </div>
             </div>

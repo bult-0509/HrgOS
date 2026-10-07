@@ -51,8 +51,10 @@ const { pathToFileURL } = require('node:url');
       for(const viewport of [{width:375,height:812},{width:320,height:700},{width:1440,height:1000},{width:812,height:375}]){
         await page.setViewportSize(viewport);await settle();
         assert.equal(await page.locator('.tb-cell').count(),25);assert.equal(await page.locator('.tb-cell[data-photo-state=locked]').count(),19);
+        assert.equal(await page.locator('.tb-cell.bingo-cell--direct .bingo-cell__direct-art').count(),0);
+        assert.equal(await page.locator('.tb-cell.bingo-cell--direct .lucide-zap').count(),0);
         assert.equal(await page.locator('[data-task-details]').count(),0);
-        const colors=await page.locator('.tb-cell[data-difficulty]').evaluateAll(cells=>Object.fromEntries(cells.map(cell=>[cell.dataset.difficulty,getComputedStyle(cell).borderLeftColor])));
+        const colors=await page.locator('.tb-cell[data-difficulty]').evaluateAll(cells=>Object.fromEntries(cells.map(cell=>[cell.dataset.difficulty,getComputedStyle(cell).getPropertyValue('--cell-level')])));
         assert.equal(new Set(Object.values(colors)).size,4);
         const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
         if(overflow)console.log(JSON.stringify({mode,viewport,wide:await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,inner:innerWidth,viewport:[...document.querySelectorAll('.bingo-deck__viewport,.bingo-deck,.app-shell,.player-game-layout,.mission-column,.card-hand')].map(el=>({class:el.className,x:el.getBoundingClientRect().x,width:el.getBoundingClientRect().width,scroll:el.scrollWidth,overflow:getComputedStyle(el).overflowX})),outside:[...document.querySelectorAll('body *')].filter(el=>!el.closest('.bingo-deck__viewport')&&el.getBoundingClientRect().right>innerWidth+1).slice(0,12).map(el=>({class:el.className,right:el.getBoundingClientRect().right,width:el.getBoundingClientRect().width}))}))}));
@@ -63,7 +65,8 @@ const { pathToFileURL } = require('node:url');
       await page.setViewportSize({width:375,height:812});await page.locator('.tb-cell[data-slot=P01]').click();
       const dialog=page.getByRole('dialog');const title=state.config.tasks.find(t=>t.boardId==='team-1'&&t.sharedSlot==='P01').title;
       assert(!(await dialog.innerText()).includes(title));assert.equal(await dialog.locator('[data-task-details]').count(),0);
-      assert((await dialog.innerText()).includes('拍摄角度'));assert(!(await dialog.innerText()).includes('拍摄要求'));
+      assert.equal(await dialog.locator('.photo-find-notice strong').innerText(),'任务锁定中，请先完成图寻。');
+      assert.equal(await dialog.locator('.photo-find-notice p').count(),0);assert(!(await dialog.innerText()).includes('拍摄要求'));
       await screenshot({path:path.join(out,`${mode}-clue-375.png`),fullPage:true});
       await dialog.locator('input[type=file]').setInputFiles({name:'replica.png',mimeType:'image/png',buffer:bytes});
       if(mode==='live'){
@@ -72,7 +75,8 @@ const { pathToFileURL } = require('node:url');
       }
       await page.getByRole('button',{name:'提交图寻审核',exact:true}).click();await dialog.waitFor({state:'hidden'});
       await page.locator('.tb-cell[data-slot=P01][data-photo-state=pending]').waitFor();
-      await page.locator('.tb-cell[data-slot=P01]').click();await page.getByText('图寻审核中',{exact:true}).waitFor();
+      await page.locator('.tb-cell[data-slot=P01]').click();await dialog.locator('.photo-find-notice[data-status=pending]').waitFor();
+      assert.equal(await dialog.locator('.photo-find-notice strong').innerText(),'任务锁定中，请先完成图寻。');
       assert.equal(await page.locator('[data-task-details]').count(),0);
       const photo=state.submissions.find(t=>t.kind==='photo'&&t.status==='QUEUED');
       await executeCommand(state,staff,{type:'review',submissionId:photo.id,result:'approve'},crypto.randomUUID());await page.evaluate(()=>window.__refresh());

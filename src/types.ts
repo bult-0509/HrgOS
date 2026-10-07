@@ -41,6 +41,9 @@ export interface Task {
 
 export interface GameCard {
   id: string;
+  /** 功能卡原编号；不代表次数、费用或 Bingo 格号。 */
+  number?: number;
+  target?: 'self' | 'other' | 'all' | 'others' | 'random' | 'highest';
   name: string;
   description: string;
   category: "intel" | "boost" | "control";

@@ -1,0 +1,7 @@
+/* 原生 top layer + portal：不受 Bingo 的 transform/filter 或普通 z-index 影响。 */
+dialog.modal-backdrop {
+  width:100%; height:100dvh; max-width:none; max-height:none;
+  margin:0; border:0; color:var(--ink); font:inherit;
+}
+dialog.modal-backdrop:not([open]) { display:none; }
+dialog.modal-backdrop::backdrop { background:transparent; }

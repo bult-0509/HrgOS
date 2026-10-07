@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { BellRing, Eye, EyeOff, Grid3X3, MapPinned, Radio, ShieldCheck, Smartphone, Swords } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, Smartphone } from "lucide-react";
 import type { UserMode } from "../types";
+import posterArtwork from "../../previews/hrg-teaser-poster/ver3.png";
+import "./LoginScreen.css";
 
 export function LoginScreen({ onLogin }: { onLogin: (mode: UserMode, username: string, password: string) => void }) {
   const [mode, setMode] = useState<UserMode>("player");
@@ -13,32 +15,13 @@ export function LoginScreen({ onLogin }: { onLogin: (mode: UserMode, username: s
   };
 
   return (
-    <main className="login-page" id="main-content">
-      <section className="login-hero" aria-labelledby="login-title">
-        <div className="brand-lockup brand-lockup--large">
-          <span className="brand-mark" aria-hidden="true">H</span>
-          <div>
-            <strong>HRG // LIVE</strong>
-            <span>LOCAL COMPETITION SYSTEM</span>
+    <main className="login-page login-page--event" id="main-content">
+      <section className="login-hero login-hero--event" aria-labelledby="login-title">
+        <h1 id="login-title" className="login-event-title"><span>失序</span><span>重奏</span></h1>
+        <div className="login-event-art" aria-hidden="true">
+          <div className="login-event-art__window">
+            <img src={posterArtwork} alt="" width={724} height={2172} decoding="async" />
           </div>
-        </div>
-
-        <div className="login-hero__copy">
-          <p className="eyebrow eyebrow--light">SESSION 01 · SYSTEM READY</p>
-          <h1 id="login-title">ENTER<br /><span>THE GRID.</span></h1>
-          <p>任务、道具、实时定位都在同一块控制面板。比赛期间请保持 App 在前台。</p>
-        </div>
-
-        <div className="login-hero__features" aria-label="产品能力">
-          <div><Grid3X3 size={20} aria-hidden="true" /><span>BINGO TASKS</span></div>
-          <div><Swords size={20} aria-hidden="true" /><span>TACTIC CARDS</span></div>
-          <div><MapPinned size={20} aria-hidden="true" /><span>LIVE LOCATION</span></div>
-        </div>
-
-        <div className="login-signal" aria-hidden="true">
-          <span><Radio size={16} />LIVE</span>
-          <i /><i /><i /><i /><i />
-          <b>01:47:32</b>
         </div>
       </section>
 
@@ -101,14 +84,6 @@ export function LoginScreen({ onLogin }: { onLogin: (mode: UserMode, username: s
               登录
             </button>
           </form>
-
-          <div className="device-note">
-            <BellRing size={20} aria-hidden="true" />
-            <div>
-              <strong>正式活动需安装 PWA</strong>
-              <p>比赛会检查通知、相机和定位权限；本地演示不会申请。</p>
-            </div>
-          </div>
         </div>
       </section>
     </main>

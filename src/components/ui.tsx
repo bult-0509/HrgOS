@@ -1,4 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { createPortal } from 'react-dom';
+import { lockOverlayScroll, restoreOverlayFocus } from './overlay';
+import './overlay.css';
 import { CheckCircle2, Info, TriangleAlert, X } from "lucide-react";
 import type { ToastState } from "../types";
 
@@ -36,62 +39,63 @@ export function Modal({
   title,
   description,
   children,
+  closeDisabled = false,
   onClose
 }: {
   title: string;
   description?: string;
   children: ReactNode;
+  closeDisabled?: boolean;
   onClose: () => void;
 }) {
   const [isClosing, setIsClosing] = useState(false);
+  const id = useId();
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const closeDisabledRef = useRef(closeDisabled);
+  closeDisabledRef.current = closeDisabled;
   const isClosingRef = useRef(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const closeTimerRef = useRef<number | null>(null);
 
   const requestClose = useCallback(() => {
-    if (isClosingRef.current) return;
+    if (isClosingRef.current || closeDisabledRef.current) return;
     isClosingRef.current = true;
     setIsClosing(true);
-    closeTimerRef.current = window.setTimeout(onClose, 150);
-  }, [onClose]);
+    closeTimerRef.current = window.setTimeout(() => onCloseRef.current(), window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 150);
+  }, []);
 
   useEffect(() => {
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.requestAnimationFrame(() => closeButtonRef.current?.focus());
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") requestClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
+    const unlock = lockOverlayScroll();
+    const element = dialogRef.current;
+    element?.showModal();
+    const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
+      window.cancelAnimationFrame(frame);
+      element?.close();
+      unlock();
       if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current);
-      previouslyFocused?.focus({ preventScroll: true });
+      restoreOverlayFocus(previouslyFocused);
     };
   }, [requestClose]);
 
-  return (
-    <div className={`modal-backdrop ${isClosing ? "is-closing" : ""}`} role="presentation" onMouseDown={requestClose}>
+  return createPortal(
+    <dialog ref={dialogRef} role="dialog" className={`modal-backdrop ${isClosing ? "is-closing" : ""}`} aria-labelledby={`${id}-title`} aria-describedby={description ? `${id}-description` : undefined} onCancel={event => { event.preventDefault(); requestClose(); }} onMouseDown={event => { if (event.target === event.currentTarget) requestClose(); }}>
       <section
         className={`modal-card ${isClosing ? "is-closing" : ""}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-        aria-describedby={description ? "modal-description" : undefined}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <button ref={closeButtonRef} className="icon-button modal-close" onClick={requestClose} aria-label="关闭弹窗">
+        <button ref={closeButtonRef} className="icon-button modal-close" disabled={closeDisabled} onClick={requestClose} aria-label="关闭弹窗">
           <X size={20} aria-hidden="true" />
         </button>
         <p className="eyebrow">HRG GAME</p>
-        <h2 id="modal-title">{title}</h2>
-        {description ? <p className="modal-description" id="modal-description">{description}</p> : null}
+        <h2 id={`${id}-title`}>{title}</h2>
+        {description ? <p className="modal-description" id={`${id}-description`}>{description}</p> : null}
         <div className="modal-content">{children}</div>
       </section>
-    </div>
+    </dialog>, document.body
   );
 }
 

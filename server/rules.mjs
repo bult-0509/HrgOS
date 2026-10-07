@@ -76,13 +76,14 @@ export function stateView(state, actor) {
   }
   const team = teamFor(state, actor);
   const photoGate = photoFindsEnabled(state);
+  const completedTasks = new Set(state.submissions.filter(item => item.kind === 'task' && ['APPROVED_AWARDED', 'APPROVED_NON_SCORING'].includes(item.status)).map(item => item.taskId));
   const tasks = state.config.tasks.map(task => {
     const slot = photoGate ? bingoSlotForTask(state, task) : task.sharedSlot ?? task.id;
     const taskUnlocked = taskIsRevealed(state, team, task);
     return { id: task.id, boardId: task.boardId, image: task.image, sharedSlot: slot,
       ...(photoGate || team.regionId ? { points: task.points, difficulty: task.difficulty } : {}), taskUnlocked,
       photoStatus: photoGate && validPhotoSlot(slot) ? photoFindStatus(state, team.id, team.regionId, slot) : undefined,
-      awarded: !!state.awards[task.id], pendingCount: state.submissions.filter(item => item.taskId === task.id && item.status === 'QUEUED').length,
+      awarded: !!state.awards[task.id], completed: !!state.awards[task.id] || completedTasks.has(task.id), pendingCount: state.submissions.filter(item => item.taskId === task.id && item.status === 'QUEUED').length,
       ...(taskUnlocked ? { title: task.title, brief: task.brief, bonus: task.bonus, failurePenalty: task.failurePenalty } : {}) };
   });
   return { ...common, team: { ...team, score: score(state, team.id) }, tasks, submissions: state.submissions.filter(item => item.teamId === team.id), cards: state.cards.filter(card => card.teamId === team.id), events: state.events.filter(event => event.teamId === team.id), effects: state.effects.filter(effect => effect.teamId === team.id), challenges: (state.challenges ?? []).filter(item => item.teamId === team.id), location: locationView(state, team) };

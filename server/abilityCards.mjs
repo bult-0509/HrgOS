@@ -1,34 +1,10 @@
 import { randomUUID, randomInt, createHash } from 'node:crypto';
+import baseCatalog from '../src/data/abilityCatalog.json' with { type: 'json' };
 
 const minute = 60000;
 export const periodicAbilityIntervalMs = 30 * minute;
-const definitions = [
-  ['合照换分', '与对方碰面并合照，经工作人员确认后交换双方当前总积分。', 20, 'other', 0, 5],
-  ['原地冻结', '指定队伍保持位置不移动 5 分钟。', 5, 'other', 0, 5],
-  ['排名透视', '立即查看全体队伍积分和排名，持续 10 分钟。', 10, 'self', 0, 0],
-  ['微笑朗诵', '指定队伍停下，一位成员微笑面对镜头完成诗朗诵或演讲，否则扣 100 分。', 10, 'other', 0, 100],
-  ['榜首援助', '当前积分最高的队伍立即给本队 100 分。', 0, 'highest', 100, 0],
-  ['下蹲挑战', '指定队伍所有成员两分钟内各完成 20 个下蹲，每缺一个扣 25 分。', 2, 'other', 0, 25],
-  ['三足限制', '指定队伍五分钟内同时落地的脚必须少于四只。', 5, 'other', 0, 5],
-  ['双手许可', '接下来的一个任务可使用双手，任务审核通过后消耗许可。', 15, 'self', 0, 0],
-  ['循环唱词', '除自身外所有队伍两分钟内持续重复 only feels like nothing could be better when Im with you，违者扣 50 分。', 2, 'others', 0, 50],
-  ['五字交流', '指定队伍五分钟内只能五个字五个字地交流。', 5, 'other', 0, 5],
-  ['期末周饮品', '指定队伍五分钟内前往最近的超市购买一瓶期末周饮品。', 5, 'other', 0, 5],
-  ['任务重演', '指定队伍重做最近完成的任务，完成可获得原任务一半积分。', 15, 'other', 0, 5],
-  ['最难曲', '指定队伍停下立即游玩一首最难曲，三分钟未完成扣 50 分。', 3, 'other', 0, 50],
-  ['时空回返', '指定队伍实际返回十分钟前的真实位置，由工作人员确认。', 15, 'other', 0, 5],
-  ['任务交换', '指定队伍选择另一支队伍，交换双方接下来要做的任务。', 15, 'other', 0, 5],
-  ['持续接触', '指定队伍十分钟内所有成员持续保持肢体接触。', 10, 'other', 0, 5],
-  ['贴地行走', '指定队伍移动时双脚不能同时离地，持续十分钟。', 10, 'other', 0, 5],
-  ['单手游戏', '指定队伍十分钟内所有成员只能单手操作游戏。', 10, 'other', 0, 5],
-  ['隐匿追逐', '本队十五分钟内不被其他队伍接触即可加分，其他队伍可查看本队实时位置。', 15, 'self', 5, 0],
-  ['昵称拼词', '随机队伍用三位成员的昵称拼出 hrg 或 awmc，成功加分，失败扣分。', 10, 'random', 5, 5],
-  ['圆周率接力', '所有队伍三人协力三十秒内背诵圆周率，背出的小数位数即加分数。', 0.5, 'all', 0, 0],
-  ['第九章密钥', '所有队伍在输入框提交第九章密钥，正确答案中最快队伍加分、最慢队伍扣分。', 10, 'all', 5, 5],
-  ['无中生有', '指定队伍从未抽到的备用任务中随机抽取一项，十五分钟内完成并提交证据。', 15, 'other', 0, 5],
-  ['爆裂魔法', '指定队伍所有成员禁言五分钟，只能使用手机打字交流。', 5, 'other', 0, 5],
-];
-export const abilityCatalog = definitions.map(([title, description, minutes, target, reward, penalty], index) => ({ number: index + 1, title, description, durationMs: minutes * minute, target, reward, penalty, enabled: true, ready: true }));
+// 正式发卡与本地卡面共用同一份既有目录，不在预览里另编规则。
+export const abilityCatalog = structuredClone(baseCatalog);
 export function ensureAbilities(state) {
   state.abilityCatalog ??= structuredClone(abilityCatalog);
   // 为已持久化的旧赛局补入新增卡，保留工作人员原有配置。

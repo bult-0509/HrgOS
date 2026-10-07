@@ -32,7 +32,7 @@ export default defineConfig({
     port: 3000,
     watch: { ignored: ['**/local-private/**', '**/artifacts/**'] },
     fs: {
-      deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "**/local-private/**", "**/失序重奏志愿分组与账号表-20261007.xlsx"]
+      deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "**/local-private/**", "**/失序重奏志愿分组与账号表-20261007.xlsx", "**/outputs/01a113e8-8714-78a3-ba2b-6836287a5e5f/**"]
     }
   },
   preview: {

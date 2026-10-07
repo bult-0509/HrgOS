@@ -20,6 +20,7 @@ async function fixture() {
 test('图寻通过前API不返回任务文案，但保留难度与分数；审核后一次解锁本队五个任务',async()=>{
   const state=await fixture();const before=stateView(state,player);
   assert.equal(before.tasks.filter(task=>task.title).length,30);
+  assert(before.tasks.every(task=>task.completed===false));
   assert(before.tasks.filter(task=>task.sharedSlot.startsWith('P')).every(task=>!task.title&&!task.brief&&task.difficulty&&task.points===5&&!task.taskUnlocked));
   await assert.rejects(run(state,player,{type:'submit',kind:'task',taskId:'team-2-P01',regionId:'stage-b',media}),/PHOTO_FIND_REQUIRED/);
   const photo=await run(state,player,{type:'submit',kind:'photo',photoSlot:'P01',teamId:'team-2',regionId:'stage-b',media});
@@ -33,11 +34,32 @@ test('图寻通过前API不返回任务文案，但保留难度与分数；审�
   assert(after.tasks.filter(task=>task.sharedSlot==='P02').every(task=>!task.title));
   assert(stateView(state,other).tasks.filter(task=>task.sharedSlot==='P01').every(task=>!task.title));
   assert.equal(after.team.score,0);assert.equal(state.events.length,0);assert.equal(Object.keys(state.awards).length,0);assert.equal(after.team.regionId,'stage-b');
+  assert(after.tasks.every(task=>task.completed===false));
   assert.throws(()=>visibleMedia(state,other,photo.media.id),/FORBIDDEN/);
   await run(state,player,{type:'submit',kind:'task',taskId:'team-2-P01',regionId:'stage-b',media});
   await run(state,staff,{type:'review',submissionId:state.submissions.at(-1).id,result:'approve'});
   assert.equal(stateView(state,player).team.score,5);
+  assert.equal(stateView(state,player).tasks.filter(task=>task.sharedSlot==='P01'&&task.completed).length,1);
+  const hiddenCompleted=stateView(state,other).tasks.find(task=>task.id==='team-2-P01');
+  assert.equal(hiddenCompleted.completed,true);assert.equal(hiddenCompleted.taskUnlocked,false);assert.equal(hiddenCompleted.title,undefined);
   const restored=restoreBackup(exportBackup(state));assert.equal(stateView(restored,player).tasks.filter(task=>task.sharedSlot==='P01'&&task.title).length,5);
+});
+
+test('任务待审和打回不泛红，已通过但不计分的完成仍公开完成状态',async()=>{
+  const state=await fixture();state.config.taskLimit=1;
+  const submit=async taskId=>run(state,player,{type:'submit',kind:'task',taskId,regionId:'stage-b',media});
+  const first=await submit('team-1-D01');
+  await run(state,staff,{type:'review',submissionId:first.submission.id,result:'approve'});
+  const second=await submit('team-1-D02');
+  assert.equal(stateView(state,player).tasks.find(task=>task.id==='team-1-D02').completed,false);
+  await run(state,staff,{type:'review',submissionId:second.submission.id,result:'reject',reason:'需补充完成证据'});
+  assert.equal(stateView(state,player).tasks.find(task=>task.id==='team-1-D02').completed,false);
+  const retry=await submit('team-1-D02');
+  await run(state,staff,{type:'review',submissionId:retry.submission.id,result:'approve'});
+  const completed=stateView(state,player).tasks.find(task=>task.id==='team-1-D02');
+  assert.equal(state.submissions.at(-1).status,'APPROVED_NON_SCORING');
+  assert.equal(completed.completed,true);assert.equal(completed.awarded,false);
+  assert.equal(stateView(state,player).team.score,5);
 });
 test('打回重交仍隐藏任务；换区后的旧图寻审核不能解锁新区域',async()=>{
   const state=await fixture();

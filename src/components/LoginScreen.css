@@ -1,0 +1,121 @@
+/* 只重绘登录页左侧；右侧表单、全局比赛主题与原海报均保持不变。 */
+.login-page--event .login-hero--event {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  isolation: isolate;
+  padding: clamp(28px, 3vw, 56px);
+  color: #fafaf2;
+  background:
+    radial-gradient(ellipse at 50% 62%, #07143b 0, transparent 62%),
+    #040607;
+  border-color: #1b263a;
+}
+
+.login-page--event .login-hero--event::before {
+  inset: 0;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  opacity: .45;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 47px, #133a8029 48px, transparent 49px 96px),
+    linear-gradient(116deg, transparent 34%, #173ad922 34.1%, transparent 34.4% 78%, #44dfff15 78.1%, transparent 78.4%);
+  transform: none;
+  pointer-events: none;
+}
+
+.login-page--event .login-hero--event::after {
+  inset: 18px 18px auto auto;
+  width: 76px;
+  height: 76px;
+  border: 0;
+  border-radius: 0;
+  opacity: .45;
+  background: repeating-conic-gradient(#d9e6ed 0 25%, transparent 0 50%) 0 0 / 19px 19px;
+  mask-image: linear-gradient(135deg, transparent, #000);
+  transform: none;
+  pointer-events: none;
+}
+
+.login-page--event .login-event-title {
+  flex: 0 0 auto;
+  display: flex;
+  margin: 0;
+  color: #fafaf2;
+  font-size: clamp(72px, 9vw, 148px);
+  font-weight: 850;
+  line-height: 1.12;
+  letter-spacing: -.045em;
+  white-space: nowrap;
+  animation: login-event-title-in 480ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.login-page--event .login-event-title span:last-child {
+  color: #c7ff13;
+}
+
+.login-page--event .login-event-art {
+  flex: 0 0 auto;
+  width: min(100%, 690px);
+  pointer-events: none;
+  animation: login-event-art-in 700ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.login-page--event .login-event-art__window {
+  position: relative;
+  aspect-ratio: 1.03;
+  overflow: hidden;
+  /* 只显示原海报的卡牌与棋盘美术，排除品牌、日期、诗句及路线。 */
+  mask-image: linear-gradient(180deg, transparent, #000 6%, #000 90%, transparent);
+}
+
+.login-page--event .login-event-art__window img {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  transform: translateY(-15%);
+}
+
+@keyframes login-event-title-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes login-event-art-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 820px) {
+  .login-page--event .login-hero--event {
+    min-height: auto;
+    padding: 28px 20px 12px;
+    gap: 8px;
+  }
+
+  .login-page--event .login-event-title {
+    font-size: clamp(52px, 12vw, 86px);
+  }
+
+  .login-page--event .login-event-art {
+    width: min(100%, 420px);
+  }
+
+  .login-page--event .login-hero--event::after {
+    width: 48px;
+    height: 48px;
+    background-size: 12px 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-page--event .login-event-title,
+  .login-page--event .login-event-art {
+    animation: none;
+  }
+}

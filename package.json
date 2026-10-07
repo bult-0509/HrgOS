@@ -16,6 +16,8 @@
     "test:rules:local": "node scripts/test-rules.mjs --local",
     "test:readiness": "node --env-file-if-exists=.env.test.local scripts/test-rules.mjs --readiness",
     "test:readiness:local": "node scripts/test-rules.mjs --local --readiness",
+    "test:location:local": "node scripts/test-location-flow.mjs",
+    "test:cards:ui": "node scripts/verify-card-motion.cjs",
     "test:lab": "node scripts/start-test-lab.mjs",
     "server": "node --env-file-if-exists=.env.test.local server/start.mjs"
   },

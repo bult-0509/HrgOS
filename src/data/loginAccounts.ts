@@ -8,8 +8,7 @@ export interface LoginAccount {
   readonly passwordHash: string;
 }
 
-// Frontend prototype allowlist; plaintext passwords are kept outside the served assets.
-// Registration roster: five teams of 4, 2, 2, 4 and 3 players, based on preferences and experience.
+// Plaintext credentials stay in local-private; five teams contain 4, 3, 3, 4 and 3 players.
 export const loginAccounts: readonly LoginAccount[] = [
   {
     "role": "staff",
@@ -58,10 +57,10 @@ export const loginAccounts: readonly LoginAccount[] = [
   },
   {
     "role": "player",
-    "username": "forzxol08",
+    "username": "yezilin23316",
     "teamId": "team-1",
-    "salt": "4e27f293ac56565011678b39610ab145",
-    "passwordHash": "25926af593626357e8b673fadd9b1117269319f71b7d8df4173f415d69891384"
+    "salt": "f5a6be6f2807edddc8b7e10ab8f6776d",
+    "passwordHash": "1fcba234a719d56ba421a31e6193b67b7c423f17fc165699d49e99a26cf79170"
   },
   {
     "role": "player",
@@ -79,6 +78,13 @@ export const loginAccounts: readonly LoginAccount[] = [
   },
   {
     "role": "player",
+    "username": "forzxol08",
+    "teamId": "team-2",
+    "salt": "4e27f293ac56565011678b39610ab145",
+    "passwordHash": "25926af593626357e8b673fadd9b1117269319f71b7d8df4173f415d69891384"
+  },
+  {
+    "role": "player",
     "username": "xtm06",
     "teamId": "team-3",
     "salt": "0c38ae91ab49e62ad4426fcef4e0d898",
@@ -90,6 +96,13 @@ export const loginAccounts: readonly LoginAccount[] = [
     "teamId": "team-3",
     "salt": "460cd797ee390d4229aa8d26acdb6516",
     "passwordHash": "63370e78fb815eaaea3f31c5e3edab99239c624a360bb84aed8583f13af24f43"
+  },
+  {
+    "role": "player",
+    "username": "luozaizailzz17",
+    "teamId": "team-3",
+    "salt": "6008a1e3c3577f8e073f1254c6119769",
+    "passwordHash": "d876715cfb51b51c0c495af49f1e5153b0696ec7b912bda00d0ae510fed90204"
   },
   {
     "role": "player",

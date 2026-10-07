@@ -1,5 +1,6 @@
 import type { AuditItem, GameCard, GameMessage, Region, Task, TeamStatus } from "../types";
 import { bingoSlots, photoRegions } from './photoClues';
+import { previewAbilityCards } from './abilityPreview';
 
 export const regions: Region[] = [
   { id: "stage-a", sequence: 1, name: "A 区", subtitle: "起始赛段 · 已完成", imageTone: "tone-cyan", clue: "找到与参考图一致的入口编号", state: "complete", progress: 100 },
@@ -44,17 +45,14 @@ export const initialTasks: Task[] = photoRegions.flatMap(region => {
 // 赛事棋盘是固定 25 项任务。旧分区样稿保留，但不随区域推进切换任务集。
 export const initialBingoTasks = initialTasks.filter(task => task.regionId === 'stage-b');
 
-export const initialCards: GameCard[] = [
-  { id: "C-01", name: "SCORE SCAN", description: "查看指定队伍当前总分，持续 5 分钟。", category: "intel", uses: 1 },
-  { id: "C-02", name: "OVERDRIVE", description: "下一项审核通过的普通任务额外获得 3 分。", category: "boost", uses: 1 },
-  { id: "C-03", name: "INPUT JAM", description: "向指定队伍施加一项待工作人员确认的限时效果。", category: "control", uses: 1, needsConfirmation: true }
-];
+// 本地仅模拟持有前三张真实功能卡，不把完整卡池冒充已获得的库存。
+export const initialCards: GameCard[] = previewAbilityCards.slice(0, 3).map((card, index) => ({ ...card, id: `C-${String(index + 1).padStart(2, '0')}` }));
 
 export const initialMessages: GameMessage[] = [
   { id: "M-01", type: "review", title: "任务审核通过", body: "“同步判定”已通过审核，队伍增加 12 分。", time: "14:26", unread: true },
   { id: "M-02", type: "event", title: "随机事件已触发", body: "Phigros队进入 B 区时触发了一项新事件。", time: "14:21", unread: true },
   { id: "M-03", type: "system", title: "下一次排名公开", body: "全体排名将在 18 分钟后公开两分钟。", time: "14:12", unread: false },
-  { id: "M-04", type: "card", title: "获得道具卡", body: "道具卡“OVERDRIVE”已放入队伍卡包。", time: "13:58", unread: false }
+  { id: "M-04", type: "card", title: "获得道具卡", body: `道具卡“${initialCards[2].name}”已放入队伍卡包。`, time: "13:58", unread: false }
 ];
 
 export const teams: TeamStatus[] = [

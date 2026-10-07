@@ -21,6 +21,7 @@ interface LiveTask {
   bonus?: { points: number; threshold: number };
   failurePenalty?: number;
   awarded?: boolean;
+  completed?: boolean;
   pendingCount?: number;
 }
 interface Props {
@@ -88,7 +89,7 @@ export function LiveTaskBoard({ team, tasks, status, busy, blocked, assignment, 
 
   return <section className="live-task-board" aria-label="任务栏">
     <BingoDeck actorTeamId={team.id} approvedRegionId={team.regionId} paused={!!selected || sending}
-      boards={boards.map(board => ({ ...board, items: board.tasks.map(task => ({ id: task.id, slot: task.sharedSlot, points: task.points, difficulty: task.difficulty, photoStatus: task.photoStatus,
+      boards={boards.map(board => ({ ...board, items: board.tasks.map(task => ({ id: task.id, slot: task.sharedSlot, points: task.points, difficulty: task.difficulty, photoStatus: task.photoStatus, completed: task.completed ?? !!task.awarded,
         state: task.taskUnlocked === false ? 'locked' : task.awarded ? 'awarded' : task.pendingCount ? 'pending' : team.regionId ? 'available' : 'locked', pendingCount: task.pendingCount })) }))}
       onSelect={id => { setTaskFile(null); setError(''); setSelectedId(id); }} />
     {assignment ? <p className="ability-alert">下一任务：{assignment.taskId}{assignment.kind === 'extra' ? '，请从对应能力卡提交证据。' : ''}</p> : null}
