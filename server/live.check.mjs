@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { createLocalStore } from './store.mjs';
 import { createTestServer } from './app.mjs';
 
@@ -23,8 +24,14 @@ test('正式比赛独立鉴权、必须配置真实任务；账本在重启后�
     const presetPlayer = (await app.inject({ method: 'POST', url: `/api/games/${presetId}/login`, payload: { username: 'fixture-player', role: 'player', password } })).json().token;
     const officialView = (await app.inject({ url: `/api/games/${presetId}/state`, headers: { authorization: `Bearer ${presetHost}` } })).json();
     assert.equal(officialView.taskCatalog.length, 125); assert.deepEqual(officialView.finishRewards, [800, 600, 400, 250, 100]);
+    assert.deepEqual(Object.values(officialView.openingPuzzles ?? {}).map(photo => [photo.regionId, photo.assetId]), [['stage-a', 'opening-region-1'], ['stage-b', 'opening-region-2'], ['stage-c', 'opening-region-3']]);
     const hiddenView = (await app.inject({ url: `/api/games/${presetId}/state`, headers: { authorization: `Bearer ${presetPlayer}` } })).json();
     assert.equal(hiddenView.tasks.length, 125); assert.equal(hiddenView.taskCatalog, undefined); assert(hiddenView.tasks.filter(task => task.sharedSlot.startsWith('P')).every(task => task.title == null));
+    assert.equal(hiddenView.openingPuzzle.assetId, 'opening-region-1');
+    const reference = await app.inject({ url: `/api/games/${presetId}/media/${hiddenView.openingPuzzle.mediaId}`, headers: { authorization: `Bearer ${presetPlayer}` } });
+    assert.equal(reference.statusCode, 200);
+    assert.equal(reference.headers['x-original-sha256'], createHash('sha256').update(await readFile(new URL('../assets/opening-photo-set/region-1.webp', import.meta.url))).digest('hex'));
+    for (const regionId of ['stage-b', 'stage-c']) assert.equal((await app.inject({ url: `/api/games/${presetId}/media/${officialView.openingPuzzles[regionId].mediaId}`, headers: { authorization: `Bearer ${presetPlayer}` } })).statusCode, 403);
     assert.equal((await app.inject({ method: 'POST', url: `/api/games/${presetId}/commands`, headers: { authorization: `Bearer ${presetHost}`, 'idempotency-key': crypto.randomUUID() }, payload: { type: 'transition', status: 'RUNNING' } })).statusCode, 200);
     const created = await app.inject({ method: 'POST', url: '/api/games', headers: { authorization: `Bearer ${gameAdminKey}` }, payload: { preset: 'custom' } }); assert.equal(created.statusCode, 201);
     const game = created.json(); assert.equal(game.credentials, undefined);

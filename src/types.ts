@@ -88,6 +88,8 @@ export interface AuditItem {
   targetRegionId?: string;
   photoSlot?: string;
   photoRegionId?: string;
+  taskId?: string;
+  taskRegionId?: string;
 }
 
 export interface ToastState {

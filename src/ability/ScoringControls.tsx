@@ -44,7 +44,7 @@ export function ScoringControls({ view, busy, run }: { view: Entry; busy: boolea
   </section>;
 }
 
-export function TaskReview({ item, tasks, busy, first, run, evidence }: { item: Entry; tasks: Entry[]; busy: boolean; first: boolean; run: Run; evidence: ReactNode }) {
+export function TaskReview({ item, tasks, busy, first, run, evidence, openingReference }: { item: Entry; tasks: Entry[]; busy: boolean; first: boolean; run: Run; evidence: ReactNode; openingReference?: ReactNode }) {
   const [reason, setReason] = useState('');
   const [performance, setPerformance] = useState('');
   const [failures, setFailures] = useState(0);
@@ -53,7 +53,8 @@ export function TaskReview({ item, tasks, busy, first, run, evidence }: { item: 
   const numericValid = Number.isSafeInteger(failures) && failures >= 0 && failures <= 100 && (!performance || Number.isSafeInteger(Number(performance)) && Number(performance) >= 0);
   const needsReason = failures > 0 || !!performance;
   const review = (result: string) => run({ type: 'review', submissionId: item.id, result, reason, ...(task?.failurePenalty ? { failedAttempts: failures } : {}), ...(task?.bonus && performance !== '' ? { performanceScore: Number(performance) } : {}) });
-  return <article className="ability-use"><p>{item.teamId} · {item.kind === 'photo' ? `图寻 #${Number(item.photoSlot.slice(1))} · ${item.regionId}` : item.kind === 'arrival' ? `${item.regionId} 到达确认` : `${item.taskId} · ${task?.title ?? ''}`}</p>
+  return <article className="ability-use"><p>{item.teamId} · {item.kind === 'photo' ? `图寻 #${Number(item.photoSlot.slice(1))} · ${item.regionId}` : item.kind === 'arrival' ? `${item.regionId} 开场谜题审核` : `${item.taskId} · ${task?.title ?? ''}`}</p>
+    {openingReference ? <section aria-label="开场谜题参考照片">{openingReference}{item.openingPuzzle.prompt ? <p>{item.openingPuzzle.prompt}</p> : null}<p>通过后仅推进该队区域，五张棋盘的19张任务图一起更新。</p></section> : null}
     {reference ? <figure className="photo-review-reference"><img src={reference.detail} alt={`图寻 #${reference.number} 参考图`} loading="lazy" /><figcaption>核对所在地点与拍摄角度；通过后只解锁本队五个对应任务，不计任务分、不换区。</figcaption></figure> : null}
     {evidence}
     {task?.bonus ? <label>核验课题成绩（至少 {task.bonus.threshold} 额外 +{task.bonus.points}；不填则仅基础分）<input type="number" min={0} step={1} value={performance} onChange={event => setPerformance(event.target.value)} /></label> : null}

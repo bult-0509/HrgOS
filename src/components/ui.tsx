@@ -40,12 +40,14 @@ export function Modal({
   description,
   children,
   closeDisabled = false,
+  dismissible = true,
   onClose
 }: {
   title: string;
   description?: string;
   children: ReactNode;
   closeDisabled?: boolean;
+  dismissible?: boolean;
   onClose: () => void;
 }) {
   const [isClosing, setIsClosing] = useState(false);
@@ -54,9 +56,10 @@ export function Modal({
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const closeDisabledRef = useRef(closeDisabled);
-  closeDisabledRef.current = closeDisabled;
+  closeDisabledRef.current = closeDisabled || !dismissible;
   const isClosingRef = useRef(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const closeTimerRef = useRef<number | null>(null);
 
   const requestClose = useCallback(() => {
@@ -71,7 +74,7 @@ export function Modal({
     const unlock = lockOverlayScroll();
     const element = dialogRef.current;
     element?.showModal();
-    const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+    const frame = window.requestAnimationFrame(() => (closeButtonRef.current ?? headingRef.current)?.focus());
     return () => {
       window.cancelAnimationFrame(frame);
       element?.close();
@@ -87,11 +90,11 @@ export function Modal({
         className={`modal-card ${isClosing ? "is-closing" : ""}`}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <button ref={closeButtonRef} className="icon-button modal-close" disabled={closeDisabled} onClick={requestClose} aria-label="关闭弹窗">
+        {dismissible ? <button ref={closeButtonRef} className="icon-button modal-close" disabled={closeDisabled} onClick={requestClose} aria-label="关闭弹窗">
           <X size={20} aria-hidden="true" />
-        </button>
+        </button> : null}
         <p className="eyebrow">HRG GAME</p>
-        <h2 id={`${id}-title`}>{title}</h2>
+        <h2 ref={headingRef} tabIndex={-1} id={`${id}-title`}>{title}</h2>
         {description ? <p className="modal-description" id={`${id}-description`}>{description}</p> : null}
         <div className="modal-content">{children}</div>
       </section>

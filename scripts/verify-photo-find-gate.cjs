@@ -48,6 +48,10 @@ const { pathToFileURL } = require('node:url');
     let layouts=0;
     for(const mode of ['demo','live']){
       state=create();await page.goto(`http://127.0.0.1:3000/__photo-find-test?mode=${mode}`);await page.locator('.tb-cell').first().waitFor();
+      if(mode==='demo'){
+        await page.getByRole('button',{name:'了解规则，开始探索'}).click();
+        await page.getByRole('dialog',{name:'开场引导'}).waitFor({state:'hidden'});
+      }
       for(const viewport of [{width:375,height:812},{width:320,height:700},{width:1440,height:1000},{width:812,height:375}]){
         await page.setViewportSize(viewport);await settle();
         assert.equal(await page.locator('.tb-cell').count(),25);assert.equal(await page.locator('.tb-cell[data-photo-state=locked]').count(),19);

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { createLocalStore } from '../server/store.mjs';
 import { createTestServer } from '../server/app.mjs';
+import { loginAccounts } from '../src/data/loginAccounts.ts';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const privateDir=path.join(root,'local-private/local-event-20261007');
@@ -13,6 +14,28 @@ const configPath=path.join(privateDir,'config.json');
 let config;
 try{config=JSON.parse(await fs.readFile(configPath,'utf8'));}catch(error){if(error.code!=='ENOENT')throw error;config={adminKey:randomBytes(32).toString('hex'),gameId:null};}
 const store=await createLocalStore(path.join(privateDir,'database'));
+if(process.argv.includes('--sync-roster-only')){
+ try{
+  const prior=await store.read(config.gameId,true);if(!prior)throw new Error('Existing local game missing');
+  const backupDir=path.join(root,'local-private/login-verification-20261007/before-16-player-adjustment');
+  await fs.mkdir(backupDir,{recursive:true});
+  try{await fs.writeFile(path.join(backupDir,'game-state.json'),JSON.stringify(prior),{flag:'wx'});}catch(error){if(error.code!=='EEXIST')throw error;}
+  await store.update(config.gameId,state=>{
+   const oldMap=new Map(state.accounts.map(account=>[account.username,account]));
+   state.accounts=loginAccounts.map(account=>{
+    const old=oldMap.get(account.username);
+    if(!old||old.passwordHash!==account.passwordHash||old.salt!==account.salt)throw new Error('Account snapshot differs');
+    return {...old,...account};
+   });
+   return null;
+  },true);
+  const next=await store.read(config.gameId,true);
+  const withoutAccounts=state=>JSON.stringify(Object.fromEntries(Object.entries(state).filter(([key])=>key!=='accounts')));
+  if(withoutAccounts(prior)!==withoutAccounts(next))throw new Error('Unrelated game state changed');
+  console.log(JSON.stringify({existingGameUpdated:true,players:next.accounts.filter(account=>account.role==='player').length,otherGameStatePreserved:true}));
+ }finally{await store.close();}
+ process.exit(0);
+}
 const app=await createTestServer({store,testKey:randomBytes(32).toString('hex'),gameAdminKey:config.adminKey,enabled:false,origins:['http://127.0.0.1:4170','http://localhost:4170']});
 const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.woff':'font/woff','.woff2':'font/woff2'};
 app.setNotFoundHandler(async(request,reply)=>{

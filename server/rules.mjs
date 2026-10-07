@@ -2,6 +2,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { normalizeBingoTasks } from './bingoBoards.mjs';
 import { bingoSlotForTask } from './bingoBoards.mjs';
+import { regionJourney } from './regionJourney.mjs';
+import { loadOpeningPhotoPreset } from './openingPhotoPreset.mjs';
 import { approvePhotoFind, photoFindsEnabled, photoFindStatus, taskIsRevealed, validPhotoSlot } from './photoFinds.mjs';
 import { officialScoring, validateFinishRewards, finishAward } from './scoring.mjs';
 import { abilityCommand, abilityView, abilityTick, abilityScoreAccess, abilityLocation, abilityResultView, taskPermissions, abilityTaskReviewed, validateReserveTasks } from './abilityCards.mjs';
@@ -67,7 +69,7 @@ export function stateView(state, actor) {
   tick(state);
   const lastSnapshot = state.snapshots.at(-1);
   const snapshot = lastSnapshot && elapsed(state) - lastSnapshot.elapsed < state.config.rankingVisibleMs ? lastSnapshot : null;
-  const taskCatalog = actor.role === 'staff' && (actor.manage || actor.review) ? { taskCatalog: state.config.tasks, boardRewards: state.config.boardRewards } : {};
+  const taskCatalog = actor.role === 'staff' && (actor.manage || actor.review) ? { taskCatalog: state.config.tasks, boardRewards: state.config.boardRewards, openingPuzzles: state.config.openingPuzzles ?? {} } : {};
   const common = { ...taskCatalog, ...abilityView(state, actor), taskPermissions: taskPermissions(state, actor.teamId), liveRanking: actor.manage || abilityScoreAccess(state, actor.teamId) ? ranking(state) : null, status: state.status, elapsedMs: elapsed(state), serverTime: state.now, configVersion: state.config.version, scoringVersion: state.config.scoringVersion, taskLimit: state.config.taskLimit, finishRewards: state.config.finishRewards, rankingSnapshot: snapshot, lastEventId: state.sequence };
   if (actor.role === 'staff') {
     if (!actor.manage && !actor.review) return { ...common, locations: actor.locations ? state.teams.map(team => locationView(state, team)) : [] };
@@ -75,6 +77,8 @@ export function stateView(state, actor) {
     return { ...common, teams: state.teams.map(team => ({ ...team, score: score(state, team.id) })), allFinished: state.teams.every(team => team.finishedAt != null), queue: state.submissions.filter(item => item.status === 'QUEUED'), submissions: state.submissions, awards: state.awards, ledger: state.ledger, events: state.events, cardRequests: state.cardRequests, effects: state.effects, snapshots: state.snapshots, challenges: state.challenges ?? [], lowestTeamId: lowestScoringTeamId(state), audit: state.audit, locations: actor.locations ? state.teams.map(team => locationView(state, team)) : undefined, locationHistory: actor.locations ? state.locationHistory : undefined, storage: { metadataBytes: Buffer.byteLength(metadata), warning: Buffer.byteLength(metadata) >= state.config.storageWarnBytes }, finishBlockers: { queued: state.submissions.filter(item => item.status === 'QUEUED').length, pendingCards: state.cardRequests.filter(item => item.status === 'PENDING').length } };
   }
   const team = teamFor(state, actor);
+  const journey = regionJourney(state, team);
+  const openingPuzzle = journey.required && journey.targetRegionId ? state.config.openingPuzzles?.[journey.targetRegionId] ?? { regionId: journey.targetRegionId, configured: false } : null;
   const photoGate = photoFindsEnabled(state);
   const completedTasks = new Set(state.submissions.filter(item => item.kind === 'task' && ['APPROVED_AWARDED', 'APPROVED_NON_SCORING'].includes(item.status)).map(item => item.taskId));
   const tasks = state.config.tasks.map(task => {
@@ -86,7 +90,7 @@ export function stateView(state, actor) {
       awarded: !!state.awards[task.id], completed: !!state.awards[task.id] || completedTasks.has(task.id), pendingCount: state.submissions.filter(item => item.taskId === task.id && item.status === 'QUEUED').length,
       ...(taskUnlocked ? { title: task.title, brief: task.brief, bonus: task.bonus, failurePenalty: task.failurePenalty } : {}) };
   });
-  return { ...common, team: { ...team, score: score(state, team.id) }, tasks, submissions: state.submissions.filter(item => item.teamId === team.id), cards: state.cards.filter(card => card.teamId === team.id), events: state.events.filter(event => event.teamId === team.id), effects: state.effects.filter(effect => effect.teamId === team.id), challenges: (state.challenges ?? []).filter(item => item.teamId === team.id), location: locationView(state, team) };
+  return { ...common, regionJourney: journey, openingPuzzle, team: { ...team, score: score(state, team.id) }, tasks, submissions: state.submissions.filter(item => item.teamId === team.id), cards: state.cards.filter(card => card.teamId === team.id), events: state.events.filter(event => event.teamId === team.id), effects: state.effects.filter(effect => effect.teamId === team.id), challenges: (state.challenges ?? []).filter(item => item.teamId === team.id), location: locationView(state, team) };
 }
 export function visibleMessages(state, actor, after = 0) {
   return state.messages.filter(item => item.id > after && (item.teamId === actor.teamId || item.teamId === 'all' || (item.teamId === 'staff' && actor.review)))
@@ -100,7 +104,9 @@ export function allowedScore(state, actor, target) {
 }
 export function visibleMedia(state, actor, id) {
   const media = state.media[id];
-  requireRule(media && (actor.review || media.teamId === actor.teamId), 'FORBIDDEN', 403);
+  const team = actor.role === 'player' ? teamFor(state, actor) : null;
+  const openingAccess = !!team && media?.openingRegionId && regionJourney(state, team).required && regionJourney(state, team).targetRegionId === media.openingRegionId;
+  requireRule(media && (actor.review || actor.role === 'staff' && actor.manage || media.teamId === actor.teamId || openingAccess), 'FORBIDDEN', 403);
   return media;
 }
 
@@ -161,27 +167,73 @@ export async function executeCommand(state, actor, command, key) {
     if (command.status === 'FINISHED') for (const use of state.abilityUses.filter(use => use.status === 'ACTIVE')) use.status = 'DONE';
     message(state, 'all', 'game', command.status, true);
     result = { status: state.status };
+  } else if (command.type === 'opening_puzzle_preset') {
+    manage(actor); requireRule(state.status !== 'FINISHED', 'GAME_NOT_REVIEWABLE');
+    requireRule(typeof command.reason === 'string' && command.reason.trim(), 'OPENING_PUZZLE_INVALID', 400);
+    const preset = await loadOpeningPhotoPreset();
+    requireRule(preset.photos.every(photo => state.config.regions.includes(photo.regionId)), 'OPENING_PUZZLE_INVALID', 400);
+    // 全部先校验、读取和生成缩略图，再一次性替换配置；待审项目仍使用原快照。
+    const prepared = await Promise.all(preset.photos.map(async photo => ({ photo, media: await prepareMedia(state, photo.media, 'opening-puzzle') })));
+    state.configHistory.push(structuredClone(state.config));
+    const puzzles = { ...state.config.openingPuzzles };
+    for (const { photo, media } of prepared) {
+      media.openingRegionId = photo.regionId;
+      puzzles[photo.regionId] = { regionId: photo.regionId, title: '开场谜题', prompt: photo.prompt, mediaId: media.id, configured: true, version: (puzzles[photo.regionId]?.version ?? 0) + 1, assetId: photo.assetId, sourceVersion: preset.version, width: photo.width, height: photo.height };
+      state.media[media.id] = media;
+    }
+    state.config.openingPuzzles = puzzles; state.config.version++;
+    result = { openingPuzzles: puzzles, sourceVersion: preset.version };
+  } else if (command.type === 'opening_puzzle_configure') {
+    manage(actor); requireRule(state.status !== 'FINISHED', 'GAME_NOT_REVIEWABLE');
+    requireRule(state.config.regions.includes(command.regionId) && command.reason?.trim(), 'OPENING_PUZZLE_INVALID', 400);
+    const title = typeof command.title === 'string' ? command.title.trim() : '开场谜题';
+    const prompt = typeof command.prompt === 'string' ? command.prompt.trim() : '';
+    requireRule(title.length > 0 && title.length <= 100 && prompt.length <= 2000, 'OPENING_PUZZLE_INVALID', 400);
+    const media = await prepareMedia(state, command.media, 'opening-puzzle');
+    media.openingRegionId = command.regionId;
+    const puzzle = { regionId: command.regionId, title, prompt, mediaId: media.id, configured: true, version: (state.config.openingPuzzles?.[command.regionId]?.version ?? 0) + 1 };
+    state.configHistory.push(structuredClone(state.config));
+    state.config.openingPuzzles = { ...state.config.openingPuzzles, [command.regionId]: puzzle };
+    state.config.version++; state.media[media.id] = media;
+    result = { openingPuzzle: puzzle };
+  } else if (command.type === 'begin_region_opening') {
+    requireRule(actor.role === 'player', 'FORBIDDEN', 403); requireRunning(state);
+    const team = teamFor(state, actor); requireRule(!team.finishedAt, 'TEAM_FINISHED');
+    requireRule(!state.activeAssignments[team.id], 'ASSIGNED_TASK_REQUIRED');
+    const next = state.config.regions[state.config.regions.indexOf(team.regionId) + 1];
+    requireRule(next && command.regionId === next, 'REGION_ORDER_INVALID');
+    team.openingRegionId = next;
+    result = { regionJourney: regionJourney(state, team) };
   } else if (command.type === 'submit') {
     requireRule(actor.role === 'player', 'FORBIDDEN', 403); requireRunning(state);
     const team = teamFor(state, actor); requireRule(!team.finishedAt, 'TEAM_FINISHED');
     if (command.kind === 'task') { requireRule(!taskPermissions(state, team.id).blockedBy.length, 'TASK_RESTRICTED'); requireRule(!state.activeAssignments[team.id] || state.activeAssignments[team.id].taskId === command.taskId, 'ASSIGNED_TASK_REQUIRED'); }
     else if (command.kind !== 'photo') requireRule(!state.activeAssignments[team.id], 'ASSIGNED_TASK_REQUIRED');
     const regionIndex = state.config.regions.indexOf(command.regionId); requireRule(regionIndex >= 0, 'REGION_INVALID', 400);
-    if (command.kind === 'arrival') requireRule(regionIndex === (team.regionId ? state.config.regions.indexOf(team.regionId) + 1 : 0), 'REGION_ORDER_INVALID');
+    if (command.kind === 'arrival') {
+      requireRule(regionIndex === (team.regionId ? state.config.regions.indexOf(team.regionId) + 1 : 0), 'REGION_ORDER_INVALID');
+      requireRule(!state.submissions.some(item => item.kind === 'arrival' && item.teamId === team.id && item.regionId === command.regionId && item.status === 'QUEUED'), 'ARRIVAL_REVIEW_PENDING');
+    }
     else if (command.kind === 'photo') {
       requireRule(team.regionId === command.regionId, 'REGION_NOT_UNLOCKED');
+      requireRule(!regionJourney(state, team).required, 'REGION_OPENING_REQUIRED');
       requireRule(photoFindsEnabled(state) && validPhotoSlot(command.photoSlot) && state.config.tasks.some(task => bingoSlotForTask(state, task) === command.photoSlot), 'PHOTO_SLOT_INVALID', 400);
       const photoStatus = photoFindStatus(state, team.id, command.regionId, command.photoSlot);
       requireRule(photoStatus !== 'approved', 'PHOTO_ALREADY_APPROVED');
       requireRule(photoStatus !== 'pending', 'PHOTO_REVIEW_PENDING');
     } else {
       requireRule(command.kind === 'task' && team.regionId === command.regionId, 'REGION_NOT_UNLOCKED');
+      requireRule(!regionJourney(state, team).required, 'REGION_OPENING_REQUIRED');
       const task = state.config.tasks.find(task => task.id === command.taskId); requireRule(task, 'TASK_INVALID', 400);
+      const progress = regionJourney(state, team);
+      requireRule(state.awards[task.id] || progress.completed + progress.pending < progress.limit, 'REGION_TASKS_PENDING');
       requireRule(taskIsRevealed(state, team, task), 'PHOTO_FIND_REQUIRED');
       requireRule(!state.effects.some(effect => effect.teamId === team.id && effect.effect === 'restriction' && activeEffect(state, effect)), 'TASK_RESTRICTED');
     }
     const media = await prepareMedia(state, command.media, team.id, command.kind === 'task');
+    if (command.kind === 'arrival') team.openingRegionId = command.regionId;
     const item = { id: randomUUID(), order: ++state.sequence, submittedAt: state.now, teamId: team.id, regionId: command.regionId, kind: command.kind, taskId: command.kind === 'task' ? command.taskId : null, ...(command.kind === 'photo' ? { photoSlot: command.photoSlot } : {}), mediaId: media.id, status: 'QUEUED' };
+    if (command.kind === 'arrival' && state.config.openingPuzzles?.[command.regionId]) item.openingPuzzle = structuredClone(state.config.openingPuzzles[command.regionId]);
     state.media[media.id] = media; state.submissions.push(item); message(state, 'staff', 'review_queue', '新增待审核项目', true, item.id);
     result = { code: 'SUBMITTED', submission: item, media: { id: media.id, sha256: media.sha256 } };
   } else if (command.type === 'review') {
@@ -199,6 +251,7 @@ export async function executeCommand(state, actor, command, key) {
       requireRule(!team.finishedAt, 'TEAM_FINISHED');
       requireRule(state.config.regions.indexOf(item.regionId) === (team.regionId ? state.config.regions.indexOf(team.regionId) + 1 : 0), 'REGION_ORDER_INVALID');
       team.regionId = item.regionId; team.regionVersion += 1; item.status = 'APPROVED';
+      team.openingRegionId = null;
       if (!state.events.some(event => event.teamId === team.id && event.regionId === item.regionId)) state.events.push({ id: randomUUID(), teamId: team.id, regionId: item.regionId, status: 'PENDING', draws: 0, candidate: null });
     } else if (item.kind === 'photo') {
       approvePhotoFind(state, item, actor);

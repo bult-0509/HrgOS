@@ -27,6 +27,8 @@ export function getPhotoClue(regionId: string, slot: string): PhotoClue | null {
   const region = photoRegions.find(item => item.id === regionId);
   if (!region || !/^P(0[1-9]|1[0-9])$/.test(slot)) return null;
   const number = Number(slot.slice(1));
-  const base = `${import.meta.env.BASE_URL}images/photo-clues/region-${region.number}/${slot.slice(1)}`;
+  // 展览馆已移至区域2开场；P01改用原备用46号照片，版本化地址避免旧预览缓存。
+  const filename = regionId === 'stage-b' && slot === 'P01' ? '01-skii-v1' : slot.slice(1);
+  const base = `${import.meta.env.BASE_URL}images/photo-clues/region-${region.number}/${filename}`;
   return { number, slot, regionId, preview: `${base}-preview.webp`, detail: `${base}.webp`, original: `${base}.png` };
 }

@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY server ./server
+COPY assets/opening-photo-set ./assets/opening-photo-set
 COPY src/data/loginAccounts.ts ./src/data/loginAccounts.ts
 COPY src/data/scoringRules.json ./src/data/scoringRules.json
 COPY src/data/abilityCatalog.json ./src/data/abilityCatalog.json

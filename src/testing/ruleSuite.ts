@@ -108,7 +108,7 @@ export async function runRuleSuite(options: SuiteOptions): Promise<SuiteReport> 
     });
     await step('SCORE / LIMIT', '按配置计算基础分、棋盘奖励与每区五项上限', async () => {
       for (const task of ['T02', 'T03', 'T04', 'T05', 'T06']) { const item = await submit('player', 'task', task); await review(item.submission.id); }
-      const sixth = await submit('player', 'task', 'T07'); ensure((await review(sixth.submission.id)).submission.status === 'APPROVED_NON_SCORING', '超过每区计分上限');
+      const sixth = await command('player', { type: 'submit', kind: 'task', taskId: 'T07', regionId: 'stage-a', media: image }, 409); ensure(sixth.code === 'REGION_OPENING_REQUIRED', '达到上限后未强制进入开场谜题');
       const view = await state(); ensure(view.team.score === 35, `预期五项基础分 25 + 配置化棋盘奖励 10，实际 ${view.team.score}`);
     });
     await step('AC-09', '队内两设备同时用卡只成功一次', async () => {

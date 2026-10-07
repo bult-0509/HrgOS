@@ -46,7 +46,7 @@ test('图寻通过前API不返回任务文案，但保留难度与分数；审�
 });
 
 test('任务待审和打回不泛红，已通过但不计分的完成仍公开完成状态',async()=>{
-  const state=await fixture();state.config.taskLimit=1;
+  const state=await fixture();
   const submit=async taskId=>run(state,player,{type:'submit',kind:'task',taskId,regionId:'stage-b',media});
   const first=await submit('team-1-D01');
   await run(state,staff,{type:'review',submissionId:first.submission.id,result:'approve'});
@@ -55,13 +55,15 @@ test('任务待审和打回不泛红，已通过但不计分的完成仍公开�
   await run(state,staff,{type:'review',submissionId:second.submission.id,result:'reject',reason:'需补充完成证据'});
   assert.equal(stateView(state,player).tasks.find(task=>task.id==='team-1-D02').completed,false);
   const retry=await submit('team-1-D02');
+  // 已入队后现场调低上限：保留完成记录，但不追加基础积分。
+  await run(state,staff,{type:'configure',patch:{taskLimit:1},reason:'现场调低任务上限'});
   await run(state,staff,{type:'review',submissionId:retry.submission.id,result:'approve'});
   const completed=stateView(state,player).tasks.find(task=>task.id==='team-1-D02');
   assert.equal(state.submissions.at(-1).status,'APPROVED_NON_SCORING');
   assert.equal(completed.completed,true);assert.equal(completed.awarded,false);
   assert.equal(stateView(state,player).team.score,5);
 });
-test('打回重交仍隐藏任务；换区后的旧图寻审核不能解锁新区域',async()=>{
+test('打回重交仍隐藏任务；进入开场后旧区不得继续提交，换区重新锁定图寻',async()=>{
   const state=await fixture();
   let photo=await run(state,player,{type:'submit',kind:'photo',photoSlot:'P02',regionId:'stage-b',media});
   await run(state,staff,{type:'review',submissionId:photo.submission.id,result:'reject',reason:'拍摄角度不一致'});
@@ -70,13 +72,12 @@ test('打回重交仍隐藏任务；换区后的旧图寻审核不能解锁新�
   await run(state,staff,{type:'review',submissionId:photo.submission.id,result:'approve'});
   assert.equal(stateView(state,player).tasks.filter(task=>task.sharedSlot==='P02'&&task.title).length,5);
   const arrival=await run(state,player,{type:'submit',kind:'arrival',regionId:'stage-c',media});
-  const oldPhoto=await run(state,player,{type:'submit',kind:'photo',photoSlot:'P03',regionId:'stage-b',media});
-  await assert.rejects(run(state,staff,{type:'review',submissionId:oldPhoto.submission.id,result:'approve'}),/FIFO_REQUIRED/);
+  await assert.rejects(run(state,player,{type:'submit',kind:'photo',photoSlot:'P03',regionId:'stage-b',media}),/REGION_OPENING_REQUIRED/);
   await run(state,staff,{type:'review',submissionId:arrival.submission.id,result:'approve'});
-  await run(state,staff,{type:'review',submissionId:oldPhoto.submission.id,result:'approve'});
+  await assert.rejects(run(state,player,{type:'submit',kind:'photo',photoSlot:'P03',regionId:'stage-b',media}),/REGION_NOT_UNLOCKED/);
   const after=stateView(state,player);assert.equal(after.team.regionId,'stage-c');
   assert(after.tasks.filter(task=>task.sharedSlot.startsWith('P')).every(task=>!task.title));
-  assert.equal(state.photoFinds['team-1']['stage-b'].P03.status,'approved');
+  assert.equal(state.photoFinds['team-1']['stage-b'].P02.status,'approved');
   await assert.rejects(run(state,player,{type:'submit',kind:'photo',photoSlot:'P03',regionId:'stage-b',media}),/REGION_NOT_UNLOCKED/);
   const direct=await run(state,player,{type:'submit',kind:'task',taskId:'team-3-D01',regionId:'stage-c',media});
   await run(state,staff,{type:'review',submissionId:direct.submission.id,result:'approve'});

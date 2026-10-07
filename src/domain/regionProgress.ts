@@ -23,6 +23,7 @@ export interface ReviewState {
   regionProgress: Record<string, TeamRegionProgress>;
   regionAuditLog: RegionAuditLog[];
   photoFinds?: PhotoFinds;
+  taskCompletions?: { teamId: string; regionId: string; taskId: string }[];
 }
 export interface ReviewCommand {
   itemId: string;
@@ -43,7 +44,12 @@ export function reviewAudit(state: ReviewState, command: ReviewCommand): ReviewS
     const all = state.photoFinds ?? {}, team = all[item.teamId] ?? {}, region = team[item.photoRegionId] ?? {};
     return { ...state, auditQueue: state.auditQueue.slice(1), photoFinds: { ...all, [item.teamId]: { ...team, [item.photoRegionId]: { ...region, [item.photoSlot!]: { status: command.result === 'approve' ? 'approved' : 'rejected', submissionId: item.id, operatorId: command.operatorId, reviewedAt: command.reviewedAt } } } } };
   }
-  if (item.kind !== '图寻题') return { ...state, auditQueue: state.auditQueue.slice(1) };
+  if (item.kind !== '图寻题') {
+    const completions = state.taskCompletions ?? [];
+    const record = command.result === 'approve' && item.teamId && item.taskId && item.taskRegionId && !completions.some(entry => entry.taskId === item.taskId)
+      ? { teamId: item.teamId, regionId: item.taskRegionId, taskId: item.taskId } : null;
+    return { ...state, auditQueue: state.auditQueue.slice(1), ...(record ? { taskCompletions: [...completions, record] } : {}) };
+  }
 
   const team = state.teams.find(t => t.id === item.teamId);
   const progress = item.teamId ? state.regionProgress[item.teamId] : undefined;

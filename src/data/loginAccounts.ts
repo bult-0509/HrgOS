@@ -8,7 +8,7 @@ export interface LoginAccount {
   readonly passwordHash: string;
 }
 
-// Plaintext credentials stay in local-private; five teams contain 4, 3, 3, 4 and 3 players.
+// Plaintext credentials stay in local-private; five teams contain 3, 3, 3, 4 and 3 players.
 export const loginAccounts: readonly LoginAccount[] = [
   {
     "role": "staff",
@@ -40,13 +40,6 @@ export const loginAccounts: readonly LoginAccount[] = [
     "teamId": "team-1",
     "salt": "de091cda2997195b240bf6ee9f3d3278",
     "passwordHash": "4c9d5905c5f8ed1e17c1d7e80a79367e1db5936616413673f6befcc2e706d252"
-  },
-  {
-    "role": "player",
-    "username": "sendaotianling02",
-    "teamId": "team-1",
-    "salt": "2bf6ed88b19408dd5680b401f38ec28d",
-    "passwordHash": "ec4cbf332bce2cc3fd44e0080b1aedbf38b8efafe90e0775a6cb90bb903bdcb0"
   },
   {
     "role": "player",
@@ -148,9 +141,9 @@ export const loginAccounts: readonly LoginAccount[] = [
   },
   {
     "role": "player",
-    "username": "rsyuanyuan13",
+    "username": "sendaotianling02",
     "teamId": "team-5",
-    "salt": "f1c4cefdd18e69d26f9e83f7c2d1fadc",
-    "passwordHash": "66025629a165e23b6ac2afe5ddf1861ba11c30df018162dbcd256ee54eb5c29e"
+    "salt": "2bf6ed88b19408dd5680b401f38ec28d",
+    "passwordHash": "ec4cbf332bce2cc3fd44e0080b1aedbf38b8efafe90e0775a6cb90bb903bdcb0"
   }
 ];

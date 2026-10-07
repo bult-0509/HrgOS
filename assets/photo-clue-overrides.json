@@ -1,0 +1,13 @@
+[
+  {
+    "region": 2,
+    "sharedSlot": "P01",
+    "number": 1,
+    "basename": "01-skii-v1",
+    "source": "assets/photo-replacements/region-2-01-skii-v1.png",
+    "originalFilename": "IMG_20260917_164535.jpg",
+    "originalRecordId": 46,
+    "retiredRecordId": 28,
+    "reason": "浙江展览馆改为区域2开场图寻，P01启用原先舍弃的SK-II金属锁形陈列照片。"
+  }
+]

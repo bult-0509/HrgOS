@@ -32,6 +32,8 @@ import { CardHand, CardDeckDock, TacticCard, gameCardModel } from '../cards/Tact
 import { CardReceipt, CardCast } from '../cards/CardReceipt';
 import { useOverlayBusy } from '../components/overlay';
 import { automaticCardTarget } from '../domain/abilityCard';
+import { GameGuide } from './GameGuide';
+import { RegionTaskArea, type RegionJourneyState, type OpeningPuzzle, type ArrivalSubmission } from './RegionTaskArea';
 
 interface PlayerAppProps {
   team: TeamStatus;
@@ -48,6 +50,12 @@ interface PlayerAppProps {
   onSubmitPhotoFind?: (slot: string, filename: string) => void;
   onUseCard: (cardId: string, target: string) => void;
   onReadMessage: (messageId: string) => void;
+  onboardingKey?: string;
+  regionJourney?: RegionJourneyState;
+  openingPuzzle?: OpeningPuzzle | null;
+  arrivalSubmissions?: ArrivalSubmission[];
+  onBeginRegionOpening?: (regionId: string) => Promise<void>;
+  onSubmitRegionOpening?: (regionId: string, file: File) => Promise<void>;
 }
 
 export function PlayerApp({
@@ -62,7 +70,13 @@ export function PlayerApp({
   photoFinds = {},
   onSubmitPhotoFind,
   onUseCard,
-  onReadMessage
+  onReadMessage,
+  onboardingKey,
+  regionJourney,
+  openingPuzzle,
+  arrivalSubmissions,
+  onBeginRegionOpening,
+  onSubmitRegionOpening
 }: PlayerAppProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedCard, setSelectedCard] = useState<GameCard | null>(null);
@@ -87,14 +101,15 @@ export function PlayerApp({
   const selectedPhoto = selectedTask ? getPhotoClue(regionId, selectedTask.sharedSlot ?? '') : null;
   const taskRevealed = !!selectedTask && canRevealTask(selectedTask.sharedSlot, approvedRegionId, photoFinds);
   const selectedPhotoStatus = photoFinds[selectedTask?.sharedSlot ?? '']?.status ?? 'locked';
-  const motionPaused = !pageVisible || Boolean(selectedTask || selectedCard || showMessages || playingCard || receipt);
+  const quotaPending = !!regionJourney && regionJourney.completed + (regionJourney.pending ?? 0) >= regionJourney.limit;
+  const motionPaused = !pageVisible || overlayBusy || Boolean(selectedTask || selectedCard || showMessages || playingCard || receipt);
   const unreadCount = messages.filter((message) => message.unread).length;
 
   // 推进地区不替换任务集合，也不清空得分。关闭旧地区上传草稿，避免错交旧图。
   useEffect(() => {
     setSelectedTask(null);
     setSelectedFile(null);
-  }, [approvedRegionId, team.id]);
+  }, [approvedRegionId, team.id, regionJourney?.required]);
 
   useEffect(() => {
     const updateVisibility = () => setPageVisible(document.visibilityState !== 'hidden');
@@ -159,6 +174,7 @@ export function PlayerApp({
           <span><Clock3 size={16} aria-hidden="true" />公开排名 18:04</span>
         </div>
         <div className="topbar__actions">
+          <GameGuide storageKey={onboardingKey ?? `demo:${team.id}`} />
           <span className="live-pill"><Radio size={14} aria-hidden="true" />进行中</span>
           <button className="icon-button message-button" onClick={() => setShowMessages(true)} aria-label={`消息，${unreadCount} 条未读`}>
             <Bell size={20} aria-hidden="true" />
@@ -171,6 +187,7 @@ export function PlayerApp({
       <main className="player-game-layout" id="main-content" tabIndex={-1}>
         <div className="mission-column">
           <section className="bingo-panel bingo-panel--themed" aria-label="任务栏">
+            <RegionTaskArea teamId={team.id} approvedRegionId={approvedRegionId} journey={regionJourney} puzzle={openingPuzzle} submissions={arrivalSubmissions} finished={team.status === 'finished'} onBegin={onBeginRegionOpening} onSubmit={onSubmitRegionOpening}>
             <BingoDeck
               actorTeamId={team.id}
               approvedRegionId={approvedRegionId}
@@ -187,6 +204,7 @@ export function PlayerApp({
               })) }))}
               onSelect={id => setSelectedTask(currentTasks.find(task => task.id === id) ?? null)}
             />
+            </RegionTaskArea>
           </section>
 
           <section className="hand-section" aria-labelledby="hand-title">
@@ -252,6 +270,7 @@ export function PlayerApp({
           </figure> : <div className="task-direct-note">{selectedTask.sharedSlot?.startsWith('P') ? <><LockKeyhole size={22} aria-hidden="true" /><span>区域入口尚未审核通过，图寻图片未开放。</span></> : <><Zap size={22} aria-hidden="true" /><span>此格无需图寻，按任务要求完成即可。</span></>}</div>}
           {!taskRevealed && region ? <PhotoFindNotice status={selectedPhotoStatus} /> : null}
           {taskRevealed && selectedTask.pendingCount ? <p role="status">已有 {selectedTask.pendingCount} 队提交任务审核。</p> : null}
+          {taskRevealed && quotaPending ? <p role="status">本区任务名额待审核，请等待结果或进入下一区域。</p> : null}
           {!region && selectedTask.sharedSlot?.startsWith('P') ? <div className="locked-panel"><LockKeyhole size={24} aria-hidden="true" /><div><strong>等待入口审核</strong><p>工作人员通过后才开放本区域图片。</p></div></div> : selectedTask.configured === false ? <div className="locked-panel"><Camera size={24} aria-hidden="true" /><div><strong>任务待配置</strong><p>图片已接入，正式任务与分值尚未填写，暂不开放提交。</p></div></div> : selectedTask.state === "locked" && taskRevealed ? (
             <div className="locked-panel"><LockKeyhole size={24} aria-hidden="true" /><div><strong>还没解锁</strong><p>先通过本区图寻题。</p></div></div>
           ) : selectedPhotoStatus === 'pending' && !taskRevealed ? null : (
@@ -261,8 +280,8 @@ export function PlayerApp({
                 <span>{selectedFile ? selectedFile.name : taskRevealed ? "选择任务完成证据" : "拍摄或选择图寻复刻照"}</span>
                 <input type="file" accept="image/*" capture="environment" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} />
               </label>
-              <button className="button button--primary button--full" disabled={!selectedFile || (!taskRevealed && !onSubmitPhotoFind)} onClick={() => {
-                if (!selectedFile) return;
+              <button className="button button--primary button--full" disabled={!selectedFile || (taskRevealed && quotaPending) || (!taskRevealed && !onSubmitPhotoFind)} onClick={() => {
+                if (!selectedFile || taskRevealed && quotaPending) return;
                 if (taskRevealed) onSubmitTask(selectedTask.id, selectedFile.name);
                 else if (selectedTask.sharedSlot) onSubmitPhotoFind?.(selectedTask.sharedSlot, selectedFile.name);
                 closeTask();

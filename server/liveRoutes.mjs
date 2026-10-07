@@ -31,6 +31,7 @@ export async function registerLiveRoutes(app, store, adminKey, accountRoster = l
       state.config.finishRewards = [...officialScoring.finishRewards]; state.config.taskLimit = officialScoring.taskLimit;
       state.config.scoringVersion = officialScoring.version; state.configured = true;
     }
+    await executeCommand(state, { id: 'system:opening-photos', role: 'staff', manage: true }, { type: 'opening_puzzle_preset', reason: '载入用户确认的区域1西湖文化广场、区域2浙江展览馆、区域3工联开场照片' }, 'initial-opening-photo-set');
     return reply.code(201).send({ id: await store.create(state, true), mode: 'live', configured: state.configured, scoringVersion: state.config.scoringVersion });
   });
   const attempts = new Map();

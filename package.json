@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:backend": "node --test server/rules.check.mjs server/persistence.check.mjs server/abilities.check.mjs server/live.check.mjs server/periodicCards.check.mjs server/bingoBoards.check.mjs server/scoring.check.mjs server/photoFinds.check.mjs server/proxyAuth.check.mjs",
+    "test:backend": "node --test server/rules.check.mjs server/persistence.check.mjs server/abilities.check.mjs server/live.check.mjs server/periodicCards.check.mjs server/bingoBoards.check.mjs server/scoring.check.mjs server/photoFinds.check.mjs server/proxyAuth.check.mjs server/regionJourney.check.mjs",
     "sync:scoring": "node scripts/sync-scoring-plan.mjs",
     "test:abilities": "node --env-file-if-exists=.env.test.local scripts/test-rules.mjs --abilities",
     "test:abilities:local": "node scripts/test-rules.mjs --local --abilities",
@@ -18,6 +18,7 @@
     "test:readiness:local": "node scripts/test-rules.mjs --local --readiness",
     "test:location:local": "node scripts/test-location-flow.mjs",
     "test:cards:ui": "node scripts/verify-card-motion.cjs",
+    "test:journey:ui": "node scripts/verify-player-journey.cjs",
     "test:lab": "node scripts/start-test-lab.mjs",
     "server": "node --env-file-if-exists=.env.test.local server/start.mjs"
   },

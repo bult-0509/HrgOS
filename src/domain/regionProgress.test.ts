@@ -11,6 +11,14 @@ function seed(): ReviewState {
 const approve: ReviewCommand = {itemId:'A-109', result:'approve', actor:'staff', operatorId:'staff-demo', reviewedAt:'2026-10-06T10:00:00Z'};
 
 describe('工作人员审核驱动的按队区域推进', () => {
+  it('通过本队普通任务才占用本区计分名额，同一共享任务不会重复占用或转给后来队伍', () => {
+    const state = seed();
+    state.auditQueue = [{ ...initialAuditQueue[0], id: 'quota-1', teamId: 'team-1', taskId: 'PHI01', taskRegionId: 'stage-a' }];
+    const first = reviewAudit(state, { ...approve, itemId: 'quota-1' });
+    expect(first.taskCompletions).toEqual([{ teamId: 'team-1', regionId: 'stage-a', taskId: 'PHI01' }]);
+    const second = reviewAudit({ ...first, auditQueue: [{ ...state.auditQueue[0], id: 'quota-2', teamId: 'team-2' }] }, { ...approve, itemId: 'quota-2' });
+    expect(second.taskCompletions).toHaveLength(1);
+  });
   it('队伍入口审核通过只推进该队，不修改其他队状态、分数或格子任务', () => {
     const state=seed(), next=reviewAudit(state,approve);
     expect(next.regionProgress['team-5']).toEqual({currentRegionId:'stage-b',version:2});

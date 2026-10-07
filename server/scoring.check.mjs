@@ -100,9 +100,11 @@ test('证据打回不自动扣分，审核中显式新增失败才扣分', async
 
 test('每区域最多五个基础奖励，全局taskID跨区域不重发', async () => {
   const state = await fixture(), tasks = officialScoring.tasks.filter(x => x.boardId === 'team-1').slice(0, 6);
-  for (const task of tasks) await review(state, await submit(state, 1, task.id));
+  for (const task of tasks.slice(0, 5)) await review(state, await submit(state, 1, task.id));
+  await assert.rejects(submit(state, 1, tasks[5].id), /REGION_OPENING_REQUIRED/);
   assert.equal(state.ledger.filter(x => x.category === 'TASK').length, 5);
-  state.teams[0].regionId = 'stage-b'; state.teams[0].regionVersion++;
+  const arrival = await invoke(state, player(1), { type: 'submit', kind: 'arrival', regionId: 'stage-b', media });
+  await review(state, arrival.submission.id);
   await review(state, await submit(state, 1, tasks[0].id));
   assert.equal(state.ledger.filter(x => x.category === 'TASK').length, 5);
 });

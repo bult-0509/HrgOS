@@ -43,7 +43,8 @@ export async function runGlobalCardGrantCheck(options: SuiteOptions): Promise<Ru
     const responses = await Promise.all(['player', 'member'].map(role => fetch(`${base}/api${path}/commands`, { method: 'POST', headers: { Authorization: `Bearer ${tokens[role]}`, 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() }, body: JSON.stringify({ type: 'ability_use', instanceId: shared.id }), signal: AbortSignal.timeout(20000) })));
     ensure(responses.map(response => response.status).sort().join(',') === '200,409', '同队并发用了同一张卡两次');
     ensure((await state('member')).abilityCards[0].status === 'USED', '队友未看到共享库存消费');
-    await review(await submit('member', 'task', 'T01'));
+    // 一队已达五项上限，必须出发；在尚有名额的二队验证同队重复审核去重。
+    await review(await submit('opponent', 'task', 'T01'));
     ensure((await state()).abilityProgress.completedTasks === 10 && (await state()).abilityCards.length === 5, '同队重复任务导致重复累计或发卡');
     for (let number = 10; number <= 19; number++) await review(await submit(number <= 14 ? 'team3-member1' : 'team4-member1', 'task', `T${String(number).padStart(2, '0')}`));
     const second = await state(); ensure(second.abilityProgress.completedTasks === 20 && second.abilityProgress.distributedRounds === 2 && second.abilityCards.length === 10, '第20个任务没有再次发给每队一张');

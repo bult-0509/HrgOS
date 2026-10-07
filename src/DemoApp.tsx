@@ -8,6 +8,9 @@ import { previewAbilityCards } from './data/abilityPreview';
 import { enqueueAuditItem } from "./domain/auditQueue";
 import { reviewAudit, type ReviewState } from './domain/regionProgress';
 import { canRevealTask } from './domain/photoFind';
+import { photoRegions } from './data/photoClues';
+import { getOpeningPuzzle } from './data/openingPuzzles';
+import type { RegionJourneyState } from './player/RegionTaskArea';
 import { PlayerApp } from "./player/PlayerApp";
 import { StaffApp } from "./staff/StaffApp";
 import type { GameCard, GameMessage, Task, ToastState, UserMode } from "./types";
@@ -40,6 +43,20 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
   });
   const { auditQueue, teams, regionProgress, regionAuditLog } = reviewState;
   const playerTeam = teams.find((team) => team.id === account.teamId);
+  const [openingRequest, setOpeningRequest] = useState<{ from: string | null; to: string } | null>(() => {
+    try { return JSON.parse(sessionStorage.getItem(`hrg:demo:opening:${account.teamId}`) ?? 'null'); } catch { return null; }
+  });
+  const approvedRegionId = playerTeam ? regionProgress[playerTeam.id]?.currentRegionId ?? null : null;
+  const currentRegion = photoRegions.find(region => region.id === approvedRegionId);
+  const nextRegion = photoRegions.find(region => region.number === (currentRegion?.number ?? 0) + 1);
+  const completedCount = reviewState.taskCompletions?.filter(item => item.teamId === playerTeam?.id && item.regionId === approvedRegionId).length ?? 0;
+  const pendingCount = new Set(auditQueue.filter(item => item.kind === '普通任务' && item.teamId === playerTeam?.id && item.taskRegionId === approvedRegionId && !reviewState.taskCompletions?.some(done => done.taskId === item.taskId)).map(item => item.taskId)).size;
+  const manualOpening = openingRequest?.from === approvedRegionId && openingRequest?.to === nextRegion?.id;
+  const journey: RegionJourneyState = {
+    required: playerTeam?.status !== 'finished' && (!currentRegion || completedCount >= 5 || manualOpening), targetRegionId: nextRegion?.id ?? null,
+    reason: !currentRegion ? 'first' : completedCount >= 5 ? nextRegion ? 'limit' : 'finish' : manualOpening ? 'manual' : null,
+    completed: completedCount, pending: pendingCount, limit: 5,
+  };
   const [toasts, setToasts] = useState<ToastState[]>([]);
   const toastId = useRef(0);
 
@@ -55,6 +72,7 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
     const task = tasks.find((item) => item.id === taskId);
     if (!task || !playerTeam) return;
     const regionId = regionProgress[playerTeam.id]?.currentRegionId ?? null;
+    if (journey.required || completedCount + pendingCount >= 5) return;
     if (!canRevealTask(task.sharedSlot, regionId, reviewState.photoFinds?.[playerTeam.id]?.[regionId ?? ''])) return;
 
     setTasks((current) => current.map((item) => (
@@ -65,6 +83,8 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
     setReviewState((current) => ({ ...current, auditQueue: enqueueAuditItem(current.auditQueue, {
         id: `A-${Date.now()}`,
         kind: "普通任务",
+        taskId: task.id,
+        taskRegionId: regionId ?? undefined,
         team: playerTeam.name,
         teamId: playerTeam.id,
         task: task.title,
@@ -85,6 +105,20 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
       ...current
     ]);
     notify({ tone: "warning", title: "仅本地演示", body: "已记录文件名，图片未上传到服务器，工作人员设备不会收到。" });
+  };
+
+  const handleBeginRegionOpening = async (targetRegionId: string) => {
+    if (!playerTeam || !nextRegion || nextRegion.id !== targetRegionId || playerTeam.status === 'finished') throw new Error('请按顺序进入下一地区。');
+    const request = { from: approvedRegionId, to: targetRegionId };
+    setOpeningRequest(request);
+    try { sessionStorage.setItem(`hrg:demo:opening:${account.teamId}`, JSON.stringify(request)); } catch { /* 本次页面仍保持必经入口。 */ }
+  };
+
+  const handleSubmitRegionOpening = async (targetRegionId: string, file: File) => {
+    if (!playerTeam || nextRegion?.id !== targetRegionId) throw new Error('区域目标已变化。');
+    const id = `opening-${crypto.randomUUID()}`;
+    setReviewState(current => ({ ...current, auditQueue: enqueueAuditItem(current.auditQueue, { id, kind: '图寻题', team: playerTeam.name, teamId: playerTeam.id, targetRegionId, task: `${nextRegion.name} · 开场谜题`, submittedAt: `${nowLabel()}:00`, waitingSeconds: 0, imageTone: 'tone-cyan', checklist: ['复刻开场参考图所在地点', '复刻开场参考图拍摄角度'] }) }));
+    notify({ tone: 'warning', title: '仅本地演示', body: `${file.name} 只记录文件名，不会上传到工作人员设备。` });
   };
 
   const handleSubmitPhotoFind = (slot: string, filename: string) => {
@@ -133,6 +167,11 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
       return;
     }
     setReviewState(current => reviewAudit(current, command));
+    if (item.kind === '普通任务' && result === 'approve' && next.taskCompletions?.some(record => record.taskId === item.taskId && record.teamId === item.teamId)) setTasks(current => current.map(task => task.id === item.taskId ? { ...task, state: 'awarded', awardedTeam: item.team, regionId: item.taskRegionId ?? task.regionId } : task));
+    if (item.kind === '图寻题' && result === 'approve' && item.teamId === playerTeam?.id) {
+      setOpeningRequest(null);
+      try { sessionStorage.removeItem(`hrg:demo:opening:${account.teamId}`); } catch { /* 演示状态不影响正式比赛。 */ }
+    }
     const entrance = item.kind === '图寻题';
     const photo = item.kind === '格位图寻';
     setMessages((current) => [
@@ -175,8 +214,14 @@ export default function DemoApp({ mode, account, onLogout }: { mode: UserMode; a
       {mode === "player" ? (playerTeam ? (
         <PlayerApp
           team={playerTeam}
+          onboardingKey={`demo:${account.username}`}
           tasks={tasks}
-          approvedRegionId={regionProgress[playerTeam.id]?.currentRegionId ?? null}
+          approvedRegionId={approvedRegionId}
+          regionJourney={journey}
+          openingPuzzle={journey.required ? getOpeningPuzzle(journey.targetRegionId) : null}
+          arrivalSubmissions={[...regionAuditLog.filter(item => item.teamId === playerTeam.id).map(item => ({ id: item.auditId, kind: 'arrival', regionId: item.to, status: item.result === 'approve' ? 'APPROVED' : 'REJECTED_RESUBMIT' })), ...auditQueue.filter(item => item.kind === '图寻题' && item.teamId === playerTeam.id).map(item => ({ id: item.id, kind: 'arrival', regionId: item.targetRegionId, status: 'QUEUED' }))]}
+          onBeginRegionOpening={handleBeginRegionOpening}
+          onSubmitRegionOpening={handleSubmitRegionOpening}
           cards={cards}
           cardCatalog={previewAbilityCards}
           messages={messages}

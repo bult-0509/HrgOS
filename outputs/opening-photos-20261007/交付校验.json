@@ -1,0 +1,54 @@
+{
+  "version": "hrg-opening-20261007-v1",
+  "crop": false,
+  "records": [
+    {
+      "regionId": "stage-a",
+      "region": 1,
+      "assetId": "opening-region-1",
+      "landmark": "西湖文化广场外立面",
+      "attachmentOrder": 3,
+      "file": "region-1.webp",
+      "master": "region-1.png",
+      "width": 1448,
+      "height": 1086,
+      "prompt": "复刻参考照片所在位置与拍摄角度，提交现场照片。",
+      "masterBytes": 2461409,
+      "displayBytes": 462502,
+      "masterSha256": "143d4ef5018becafb50a0ae8fe976251ade27cdd553230439c8c3aef8f56fa12",
+      "displaySha256": "5482eba78ea87f5658f2a0cf65d2aa706307443377c50d91cc509e3eebee2e88"
+    },
+    {
+      "regionId": "stage-b",
+      "region": 2,
+      "assetId": "opening-region-2",
+      "landmark": "浙江展览馆正立面",
+      "attachmentOrder": 1,
+      "file": "region-2.webp",
+      "master": "region-2.png",
+      "width": 1448,
+      "height": 1086,
+      "prompt": "复刻参考照片所在位置与拍摄角度，提交现场照片。",
+      "masterBytes": 1884792,
+      "displayBytes": 288526,
+      "masterSha256": "0bdc0883b2a4d9099f3bf96a83d9fadae3c15e9cb10c3820d9dbbd015c309366",
+      "displaySha256": "c37c9b48dc9100bab6fd51024b378c1c6f17d4fd79bbb8dc545416f724b7107b"
+    },
+    {
+      "regionId": "stage-c",
+      "region": 3,
+      "assetId": "opening-region-3",
+      "landmark": "工联 City Center 招牌",
+      "attachmentOrder": 2,
+      "file": "region-3.webp",
+      "master": "region-3.png",
+      "width": 1853,
+      "height": 849,
+      "prompt": "复刻参考照片所在位置与拍摄角度，提交现场照片。",
+      "masterBytes": 2047310,
+      "displayBytes": 333880,
+      "masterSha256": "5bd6fee40ca65943ed3a3b737631b58fcd266d74d7e90df61df7f34ffa0fba5d",
+      "displaySha256": "a98fb94f6730d045d4501b0806cceb5779db75bad57230bf11c131b675e94396"
+    }
+  ]
+}

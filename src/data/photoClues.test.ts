@@ -19,4 +19,13 @@ describe('共享图寻资源', () => {
     for(const slot of ['D01','P00','P20','P1','P99','']) expect(getPhotoClue('stage-b',slot)).toBeNull();
     expect(getPhotoClue('unknown','P01')).toBeNull();
   });
+  it('区域2的P01改用备用SK-II照片，三个层级都不再引用开场展览馆照片', () => {
+    const photo = getPhotoClue('stage-b', 'P01');
+    expect(photo?.preview).toBe('/images/photo-clues/region-2/01-skii-v1-preview.webp');
+    expect(photo?.detail).toBe('/images/photo-clues/region-2/01-skii-v1.webp');
+    expect(photo?.original).toBe('/images/photo-clues/region-2/01-skii-v1.png');
+    expect(photo?.number).toBe(1);
+    expect(getPhotoClue('stage-a', 'P01')?.original).toBe('/images/photo-clues/region-1/01.png');
+    expect(getPhotoClue('stage-c', 'P01')?.original).toBe('/images/photo-clues/region-3/01.png');
+  });
 });

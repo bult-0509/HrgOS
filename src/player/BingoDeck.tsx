@@ -22,7 +22,7 @@ export function BingoDeck({ boards, actorTeamId, approvedRegionId, paused = fals
   const active = Math.max(0, boards.findIndex(board => board.id === selectedBoard));
   const viewport = useRef<HTMLDivElement>(null);
   const container = useRef<HTMLElement>(null);
-  const returnKeyboardFocus = useRef(false);
+  const returnKeyboardFocus = useRef<'previous' | 'next' | null>(null);
   const previousOffsets = useRef(new Map<string, number>());
   const gesture = useRef<{ x: number; y: number; id: number } | null>(null);
   const suppressClick = useRef(false);
@@ -30,7 +30,7 @@ export function BingoDeck({ boards, actorTeamId, approvedRegionId, paused = fals
 
   // 循环从最左回到最右的卡片不横穿中心；取消旧帧，最终选择不依赖动画结束。
   useLayoutEffect(() => {
-    if (returnKeyboardFocus.current) { container.current?.querySelector<HTMLButtonElement>('.bingo-deck__tabs button[aria-pressed=true]')?.focus({ preventScroll: true }); returnKeyboardFocus.current = false; }
+    if (returnKeyboardFocus.current) { container.current?.querySelector<HTMLButtonElement>(`.bingo-deck__arrow--${returnKeyboardFocus.current}`)?.focus({ preventScroll: true }); returnKeyboardFocus.current = null; }
     const jumping: HTMLElement[] = [];
     viewport.current?.querySelectorAll<HTMLElement>('.bingo-deck__card').forEach(card => {
       const next = Number(card.dataset.offset), previous = previousOffsets.current.get(card.dataset.boardId!);
@@ -50,7 +50,7 @@ export function BingoDeck({ boards, actorTeamId, approvedRegionId, paused = fals
   const root = `${import.meta.env.BASE_URL}images/team-bingo/`;
   return <section ref={container} className={`bingo-deck ${!motionEnabled ? 'bingo-deck--paused' : ''}`} aria-roledescription="轮播" aria-label="共享任务棋盘，任何队伍均可提交" onKeyDown={event => {
     if (paused || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || (event.target as HTMLElement).closest('input,select,textarea,[contenteditable=true]')) return;
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); returnKeyboardFocus.current = !!(event.target as HTMLElement).closest('.tb-cell'); select(active + (event.key === 'ArrowRight' ? 1 : -1)); }
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); returnKeyboardFocus.current = (event.target as HTMLElement).closest('.tb-cell') ? event.key === 'ArrowRight' ? 'next' : 'previous' : null; select(active + (event.key === 'ArrowRight' ? 1 : -1)); }
   }}>
     <div className="bingo-deck__viewport" ref={viewport} onPointerDown={event => {
       if (!paused && event.isPrimary && event.button === 0) { gesture.current = { x: event.clientX, y: event.clientY, id: event.pointerId }; suppressClick.current = false; }
@@ -78,20 +78,13 @@ export function BingoDeck({ boards, actorTeamId, approvedRegionId, paused = fals
                 })}</div><div className="tb-footer">19 / 06</div></div>
               </div>
             </div>
-            <button type="button" className="bingo-deck__peek-target" tabIndex={-1} disabled={paused} aria-label={`切换到${board.name} Bingo`} onClick={() => select(index)} />
           </>}
         </div>;
       })}
     </div>
     {boards.length > 1 ? <nav className="bingo-deck__controls" aria-label="切换任务棋盘">
-      <button type="button" className="bingo-deck__arrow" aria-label="上一张 Bingo" disabled={paused} onClick={() => select(active - 1)}><ChevronLeft size={20} aria-hidden="true" /></button>
-      <div className="bingo-deck__tabs">{boards.map((board, index) => {
-        const theme = getTeamBingoTheme(board.id);
-        return <button key={board.id} type="button" aria-pressed={active === index} disabled={paused} onClick={() => select(index)} aria-label={`${board.name} Bingo，${board.items.length} 项共享任务`}>
-          {theme ? <img src={`${root}${theme.mascot}.webp`} alt="" width="56" height="56" decoding="async" /> : null}<span>{board.name}</span>
-        </button>;
-      })}</div>
-      <button type="button" className="bingo-deck__arrow" aria-label="下一张 Bingo" disabled={paused} onClick={() => select(active + 1)}><ChevronRight size={20} aria-hidden="true" /></button>
+      <button type="button" className="bingo-deck__arrow bingo-deck__arrow--previous" aria-label="上一张 Bingo" disabled={paused} onClick={() => select(active - 1)}><ChevronLeft size={20} aria-hidden="true" /></button>
+      <button type="button" className="bingo-deck__arrow bingo-deck__arrow--next" aria-label="下一张 Bingo" disabled={paused} onClick={() => select(active + 1)}><ChevronRight size={20} aria-hidden="true" /></button>
     </nav> : null}
     <p className="bingo-deck__announcement" role="status" aria-live="polite">{boards[active]?.name} Bingo，{active + 1}/{boards.length}。任务可由任意队伍提交，区域始终以本队审核结果为准。</p>
   </section>;

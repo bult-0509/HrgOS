@@ -1,0 +1,42 @@
+{
+  "version": "hrg-opening-20261007-v1",
+  "style": "细蓝黑线稿、三阶赛璐璐阴影、轻网点；建筑和招牌线索保持清晰",
+  "photos": [
+    {
+      "regionId": "stage-a",
+      "region": 1,
+      "assetId": "opening-region-1",
+      "landmark": "西湖文化广场外立面",
+      "attachmentOrder": 3,
+      "file": "region-1.webp",
+      "master": "region-1.png",
+      "width": 1448,
+      "height": 1086,
+      "prompt": "复刻参考照片所在位置与拍摄角度，提交现场照片。"
+    },
+    {
+      "regionId": "stage-b",
+      "region": 2,
+      "assetId": "opening-region-2",
+      "landmark": "浙江展览馆正立面",
+      "attachmentOrder": 1,
+      "file": "region-2.webp",
+      "master": "region-2.png",
+      "width": 1448,
+      "height": 1086,
+      "prompt": "复刻参考照片所在位置与拍摄角度，提交现场照片。"
+    },
+    {
+      "regionId": "stage-c",
+      "region": 3,
+      "assetId": "opening-region-3",
+      "landmark": "工联 City Center 招牌",
+      "attachmentOrder": 2,
+      "file": "region-3.webp",
+      "master": "region-3.png",
+      "width": 1853,
+      "height": 849,
+      "prompt": "复刻参考照片所在位置与拍摄角度，提交现场照片。"
+    }
+  ]
+}

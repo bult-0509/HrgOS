@@ -1,6 +1,10 @@
 import { validateTestApiBase } from '../testing/ruleSuite';
 
 const messages: Record<string, string> = {
+  REGION_OPENING_REQUIRED: '请先完成区域开场谜题；最后一区域达到上限后请前往终点。',
+  REGION_TASKS_PENDING: '本区任务名额待审核，请等待结果或进入下一区域。',
+  OPENING_PUZZLE_INVALID: '请确认区域、开场题目、图片和修改依据。',
+  ARRIVAL_REVIEW_PENDING: '开场谜题正在审核，请等待工作人员处理。',
   PHOTO_FIND_REQUIRED: '请先复刻这张参考图的地点与拍摄角度，图寻审核通过后才能提交对应任务。',
   PHOTO_SLOT_INVALID: '请选择本区域有效的图寻图片编号。', PHOTO_ALREADY_APPROVED: '这张图寻已通过，对应任务已解锁。', PHOTO_REVIEW_PENDING: '这张图寻正在审核，请等待工作人员处理。',
   FINISH_REGION_REQUIRED: '请先通过龙翔桥入口审核，再确认完赛。', FINISH_TASKS_PENDING: '本队仍有任务待审核，请先处理后再确认完赛。', FINISH_REWARDS_INVALID: '完赛奖励须为五个递减的非负整数。',

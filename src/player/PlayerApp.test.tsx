@@ -21,8 +21,9 @@ describe('玩家照片棋盘', () => {
   it('默认区域展示25格，但任务名称与清晰照片只在点开后出现', () => {
     const html = markup('stage-b');
     expect((html.match(/class="bingo-cell bingo-cell--/g) ?? [])).toHaveLength(25);
-    expect(html).toContain('/images/photo-clues/region-2/01-preview.webp');
-    expect(html).not.toContain('/images/photo-clues/region-2/01.webp');
+    expect(html).toContain('/images/photo-clues/region-2/01-skii-v1-preview.webp');
+    expect(html).not.toContain('/images/photo-clues/region-2/01-skii-v1.webp');
+    expect(html).not.toContain('/images/photo-clues/region-2/01-preview.webp');
     expect(html).not.toContain('同步判定');
     expect(html).not.toContain('Crosshair');
     expect(html).toContain('暂停动效');
